@@ -1,0 +1,220 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+
+### ============================================
+### AUTHENTICATION (Run this first to get token)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token from login response
+@token = {{loginResponse.response.body.data.token}}
+
+### Category IDs (from categories.rest)
+@grainsId = 68e2b85ba07d43620a528976
+@organicGrainsId = 68e2af1298783e455763fc76
+@fruitsId = 68e2af1998783e455763fc7d
+@dairyId = 68e2af2098783e455763fc85
+@snacksId = 68e2af2498783e455763fc92
+
+### ============================================
+### CREATE PRODUCTS
+### ============================================
+
+### 1. Create Product - Organic Quinoa
+# @name createProduct1
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Seeds of Change Organic Quinoa, Brown",
+  "sku": "SKU001",
+  "category": "{{organicGrainsId}}",
+  "price": 28.85,
+  "originalPrice": 32.80,
+  "image": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
+  "images": [
+    "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
+    "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500"
+  ],
+  "description": "Premium organic quinoa from Peru. High in protein and gluten-free.",
+  "detailDescription": {
+    "intro": [
+      "Organic quinoa is a nutrient-rich superfood that has been cultivated in South America for thousands of years.",
+      "Our quinoa is sourced from certified organic farms in Peru and is completely unprocessed."
+    ],
+    "specifications": [
+      { "label": "Type Of Packing", "value": "Bag" },
+      { "label": "Color", "value": "Brown" },
+      { "label": "Quantity Per Case", "value": "1" },
+      { "label": "Organic", "value": "Yes" }
+    ],
+    "packaging": [
+      "Store in a cool, dry place",
+      "Keep away from direct sunlight",
+      "Seal bag after opening"
+    ],
+    "suggestedUse": [
+      "Rinse before cooking",
+      "Cook in boiling water for 15 minutes",
+      "Use as a rice substitute or in salads"
+    ],
+    "otherIngredients": [
+      "100% Organic Quinoa"
+    ],
+    "warnings": [
+      "May contain traces of nuts",
+      "Rinse thoroughly before consumption"
+    ]
+  },
+  "vendor": "Organic Farms Co.",
+  "stock": 100,
+  "rating": 4.5,
+  "reviewCount": 32,
+  "type": "Organic",
+  "tags": ["organic", "gluten-free", "protein", "quinoa"],
+  "mfgDate": "2024-06-01",
+  "shelfLife": "365 days",
+  "isFeatured": true
+}
+
+### 2. Create Product - Italian-Style Chicken Meatballs
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "All Natural Italian-Style Chicken Meatballs",
+  "sku": "SKU002",
+  "category": "{{snacksId}}",
+  "price": 24.50,
+  "originalPrice": 28.00,
+  "image": "https://images.unsplash.com/photo-1574484284002-952d92456975?w=400",
+  "description": "Delicious Italian-style chicken meatballs made with organic ingredients.",
+  "vendor": "Healthy Foods Inc.",
+  "stock": 75,
+  "rating": 4.2,
+  "reviewCount": 18,
+  "type": "Organic",
+  "tags": ["organic", "protein", "ready-to-eat"],
+  "shelfLife": "90 days"
+}
+
+### 3. Create Product - Basic (Minimal Fields)
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Simple Product",
+  "sku": "SKU003",
+  "category": "{{grainsId}}",
+  "price": 15.99,
+  "image": "https://via.placeholder.com/400",
+  "description": "A simple product with minimal information",
+  "vendor": "Simple Vendor",
+  "stock": 50
+}
+
+### 4. Create Product - Out of Stock
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Out of Stock Item",
+  "sku": "SKU004",
+  "category": "{{snacksId}}",
+  "price": 19.99,
+  "image": "https://via.placeholder.com/400",
+  "description": "This product is currently out of stock",
+  "vendor": "Test Vendor",
+  "stock": 0
+}
+
+### 5. Create Product - With Discount
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Discounted Premium Item",
+  "sku": "SKU005",
+  "category": "{{fruitsId}}",
+  "price": 39.99,
+  "originalPrice": 59.99,
+  "image": "https://via.placeholder.com/400",
+  "description": "Premium item with 33% discount",
+  "vendor": "Premium Brands",
+  "stock": 25,
+  "rating": 4.8,
+  "reviewCount": 156,
+  "type": "Premium",
+  "tags": ["premium", "sale", "bestseller"],
+  "isFeatured": true
+}
+
+### 6. Create Product - Missing Required Fields (400 Test)
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Incomplete Product"
+}
+
+### 7. Create Product - Duplicate SKU (400 Test)
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Duplicate SKU Product",
+  "sku": "SKU001",
+  "category": "{{dairyId}}",
+  "price": 10.00,
+  "image": "https://via.placeholder.com/400",
+  "description": "This should fail due to duplicate SKU",
+  "vendor": "Test Vendor",
+  "stock": 10
+}
+
+### 8. Create Product - Invalid Category (400 Test)
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Category Product",
+  "sku": "SKU999",
+  "category": "507f1f77bcf86cd799439011",
+  "price": 10.00,
+  "image": "https://via.placeholder.com/400",
+  "description": "Invalid category ID",
+  "vendor": "Test Vendor",
+  "stock": 10
+}
+
+### 9. Create Product - Without Auth Token (401 Test)
+POST {{baseUrl}}/products
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Product",
+  "sku": "SKU888",
+  "category": "{{grainsId}}",
+  "price": 10.00,
+  "image": "https://via.placeholder.com/400",
+  "description": "Should fail - no auth token",
+  "vendor": "Test Vendor",
+  "stock": 10
+}

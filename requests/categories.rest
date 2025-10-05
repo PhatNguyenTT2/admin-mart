@@ -1,0 +1,107 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+
+### ============================================
+### AUTHENTICATION (Run this first to get token)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token from login response
+@token = {{loginResponse.response.body.data.token}}
+
+### ============================================
+### CATEGORIES
+### ============================================
+
+### 1. Get All Categories (Public)
+GET {{baseUrl}}/categories
+
+### 2. Get Category by ID (Update categoryId with actual ID from create response)
+@categoryId = 68e2af1298783e455763fc76
+GET {{baseUrl}}/categories/{{categoryId}}
+
+### 3. Get Category by Slug
+GET {{baseUrl}}/categories/slug/grains
+
+### 4. Create Category (Admin Only)
+# @name createCategory
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Grains",
+  "description": "Organic grains and cereals",
+  "image": "https://example.com/grains.jpg",
+  "order": 1
+}
+
+### 5. Create Multiple Categories
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Vegetables",
+  "description": "Fresh organic vegetables",
+  "order": 2
+}
+
+###
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Fruits",
+  "description": "Fresh seasonal fruits",
+  "order": 3
+}
+
+###
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Dairy Products",
+  "description": "Organic dairy products",
+  "order": 4
+}
+
+###
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Snacks",
+  "description": "Healthy organic snacks",
+  "order": 5
+}
+
+### 6. Update Category (Admin Only)
+PUT {{baseUrl}}/categories/{{categoryId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Organic Grains",
+  "description": "Premium organic grains and cereals",
+  "image": "https://example.com/grains-updated.jpg",
+  "order": 1,
+  "isActive": true
+}
+
+### 7. Delete Category (Admin Only)
+DELETE {{baseUrl}}/categories/{{categoryId}}
+Authorization: Bearer {{token}}

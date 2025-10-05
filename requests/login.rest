@@ -1,0 +1,49 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+
+### ============================================
+### AUTHENTICATION
+### ============================================
+
+### 1. Register Admin (if you don't have an account)
+# @name registerResponse
+POST {{baseUrl}}/login/register
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "email": "admin@example.com",
+  "fullName": "Admin User",
+  "password": "admin123"
+}
+
+### 2. Login (Run this first to get token)
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token from login response
+@token = {{loginResponse.response.body.data.token}}
+@userId = {{loginResponse.response.body.data.user.id}}
+
+### 3. Login (Alternative User)
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "test123"
+}
+
+### 4. Get Current User Info
+GET {{baseUrl}}/login/me
+Authorization: Bearer {{token}}
+
+### 5. Logout
+POST {{baseUrl}}/login/logout
+Authorization: Bearer {{token}}

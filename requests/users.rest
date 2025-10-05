@@ -1,0 +1,154 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+
+### ============================================
+### AUTHENTICATION (Run this first to get token)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token from login response
+@token = {{loginResponse.response.body.data.token}}
+@userId = {{loginResponse.response.body.data.user.id}}
+
+### Alternative: Register new admin (if you don't have an account)
+# @name registerResponse
+POST {{baseUrl}}/login/register
+Content-Type: application/json
+
+{
+  "username": "admin2",
+  "email": "admin2@example.com",
+  "fullName": "Admin User",
+  "password": "admin123"
+}
+
+### ============================================
+### USERS
+### ============================================
+
+### 1. Get All Users (Admin Only)
+GET {{baseUrl}}/users
+Authorization: Bearer {{token}}
+
+### 2. Get Users with Pagination
+GET {{baseUrl}}/users?page=1&per_page=10
+Authorization: Bearer {{token}}
+
+### 3. Filter Users by Role
+GET {{baseUrl}}/users?role=admin
+Authorization: Bearer {{token}}
+
+### 4. Filter Active Users
+GET {{baseUrl}}/users?is_active=true
+Authorization: Bearer {{token}}
+
+### 5. Get User by ID
+GET {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{token}}
+
+### 6. Create User (Admin Only)
+# @name createUser
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "employee1",
+  "email": "employee1@example.com",
+  "fullName": "Employee One",
+  "password": "employee123",
+  "role": "employee"
+}
+
+### 7. Create Another User
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "testuser@example.com",
+  "fullName": "Test User",
+  "password": "test123",
+  "role": "user"
+}
+
+### 8. Update User - Self
+PUT {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "newemail@example.com",
+  "fullName": "Updated Full Name"
+}
+
+### 9. Update User - Change Password
+PUT {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "password": "newpassword123"
+}
+
+### 10. Update User Role (Admin Only)
+PATCH {{baseUrl}}/users/{{userId}}/role
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role": "employee"
+}
+
+### 11. Deactivate User (Admin Only)
+PATCH {{baseUrl}}/users/{{userId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### 12. Activate User (Admin Only)
+PATCH {{baseUrl}}/users/{{userId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### 13. Delete User (Admin Only)
+DELETE {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{token}}
+
+### 14. Create User - Missing Fields (400 Test)
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "incomplete"
+}
+
+### 15. Create User - Duplicate Username (400 Test)
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "email": "duplicate@example.com",
+  "fullName": "Duplicate User",
+  "password": "test123"
+}

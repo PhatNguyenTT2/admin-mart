@@ -1,0 +1,41 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+
+### ============================================
+### AUTHENTICATION (Run this first to get token)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token from login response
+@token = {{loginResponse.response.body.data.token}}
+
+### Set this after creating a product
+@productId = YOUR_PRODUCT_ID_HERE
+
+### ============================================
+### DELETE PRODUCTS
+### ============================================
+
+### 1. Delete Product
+DELETE {{baseUrl}}/products/{{productId}}
+Authorization: Bearer {{token}}
+
+### 2. Delete Product - Invalid ID (404 Test)
+DELETE {{baseUrl}}/products/507f1f77bcf86cd799439011
+Authorization: Bearer {{token}}
+
+### 3. Delete Product - Without Auth (401 Test)
+DELETE {{baseUrl}}/products/{{productId}}
+
+### 4. Delete Product - Invalid Format (400 Test)
+DELETE {{baseUrl}}/products/invalid-id-format
+Authorization: Bearer {{token}}

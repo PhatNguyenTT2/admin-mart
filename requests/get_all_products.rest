@@ -1,0 +1,57 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+
+### Set this after creating a category
+@categoryId = YOUR_CATEGORY_ID_HERE
+
+### ============================================
+### GET ALL PRODUCTS (No authentication needed - Public endpoint)
+### ============================================
+
+### 1. Get All Products (Default)
+GET {{baseUrl}}/products
+
+### 2. Get Products with Pagination
+GET {{baseUrl}}/products?page=1&per_page=8
+
+### 3. Get Products - Page 2
+GET {{baseUrl}}/products?page=2&per_page=5
+
+### 4. Filter by Category
+GET {{baseUrl}}/products?category={{categoryId}}
+
+### 5. Filter by Price Range
+GET {{baseUrl}}/products?min_price=10&max_price=50
+
+### 6. Filter by Type (Organic)
+GET {{baseUrl}}/products?type=Organic
+
+### 7. Filter In-Stock Only
+GET {{baseUrl}}/products?in_stock=true
+
+### 8. Text Search
+GET {{baseUrl}}/products?search=quinoa
+
+### 9. Sort by Price Ascending
+GET {{baseUrl}}/products?sort_by=price_asc
+
+### 10. Sort by Price Descending
+GET {{baseUrl}}/products?sort_by=price_desc
+
+### 11. Sort by Name A-Z
+GET {{baseUrl}}/products?sort_by=name_asc
+
+### 12. Sort by Name Z-A
+GET {{baseUrl}}/products?sort_by=name_desc
+
+### 13. Sort by Newest
+GET {{baseUrl}}/products?sort_by=newest
+
+### 14. Sort by Rating
+GET {{baseUrl}}/products?sort_by=rating
+
+### 15. Combined Filters - Complex Query
+GET {{baseUrl}}/products?category={{categoryId}}&min_price=20&max_price=100&type=Organic&in_stock=true&sort_by=price_asc&page=1&per_page=10
+
+### 16. Search + Filter + Sort
+GET {{baseUrl}}/products?search=organic&type=Organic&sort_by=rating&per_page=5
