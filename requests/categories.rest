@@ -1,5 +1,6 @@
-### Variables
+### Variables (Switch between local and deployed backend)
 @baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
 
 ### ============================================
 ### AUTHENTICATION (Run this first to get token)
@@ -45,7 +46,49 @@ Content-Type: application/json
   "order": 1
 }
 
-### 5. Create Multiple Categories
+### 5. Create Categories from Mock Data (Run these in order!)
+
+### Category 1: Baking material
+# @name bakingMaterial
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Baking material",
+  "description": "Flour, sugar, baking ingredients and organic grains",
+  "image": "https://www.figma.com/api/mcp/asset/99a37d83-0cb8-40cb-9da2-c9a1c9eb8662",
+  "order": 1
+}
+
+### Category 2: Meats
+# @name meats
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Meats",
+  "description": "Fresh and frozen meat products",
+  "image": "https://www.figma.com/api/mcp/asset/0359b432-c20d-4378-a587-d6f7e25eeda0",
+  "order": 2
+}
+
+### Category 3: Milks & Dairies
+# @name milksDairies
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Milks & Dairies",
+  "description": "Fresh milk, yogurt, cheese and dairy products",
+  "image": "https://www.figma.com/api/mcp/asset/0359b432-c20d-4378-a587-d6f7e25eeda0",
+  "order": 3
+}
+
+### Category 4: Vegetables
+# @name vegetables
 POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -53,41 +96,29 @@ Content-Type: application/json
 {
   "name": "Vegetables",
   "description": "Fresh organic vegetables",
-  "order": 2
-}
-
-###
-POST {{baseUrl}}/categories
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "name": "Fruits",
-  "description": "Fresh seasonal fruits",
-  "order": 3
-}
-
-###
-POST {{baseUrl}}/categories
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "name": "Dairy Products",
-  "description": "Organic dairy products",
+  "image": "https://www.figma.com/api/mcp/asset/54310325-abd2-4f17-9865-e5ae10f85217",
   "order": 4
 }
 
-###
+### Category 5: Fresh Fruits
+# @name freshFruits
 POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Snacks",
-  "description": "Healthy organic snacks",
+  "name": "Fresh Fruits",
+  "description": "Fresh seasonal fruits",
+  "image": "https://www.figma.com/api/mcp/asset/df9e24f5-fc45-431e-a6d1-e9ff64942cb3",
   "order": 5
 }
+
+### Extract Category IDs for use in create_product.rest
+@bakingMaterialId = {{bakingMaterial.response.body.data.category.id}}
+@meatsId = {{meats.response.body.data.category.id}}
+@milksDairiesId = {{milksDairies.response.body.data.category.id}}
+@vegetablesId = {{vegetables.response.body.data.category.id}}
+@freshFruitsId = {{freshFruits.response.body.data.category.id}}
 
 ### 6. Update Category (Admin Only)
 PUT {{baseUrl}}/categories/{{categoryId}}

@@ -1,0 +1,497 @@
+### Variables (Switch between local and deployed backend)
+@baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
+
+### ============================================
+### AUTHENTICATION (Run this first!)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token
+@token = {{loginResponse.response.body.data.token}}
+
+### ============================================
+### CATEGORY IDs (Update these after creating categories)
+### ============================================
+### Run categories.rest first, then copy IDs here!
+
+@bakingMaterialId = 68e3775b81ace97f65644531
+@meatsId = 68e3775f81ace97f65644545
+
+@milksDairiesId = 68e3776281ace97f65644559
+
+@vegetablesId = 68e3776681ace97f6564456d
+
+@freshFruitsId = 68e3776a81ace97f65644581
+
+### ============================================
+### CREATE 15 PRODUCTS FROM MOCK DATA
+### ============================================
+
+### Product 1: Seeds of Change Organic Quinoa, Brown
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Seeds of Change Organic Quinoa, Brown",
+  "sku": "FWM15VKT",
+  "category": "{{bakingMaterialId}}",
+  "price": 28.85,
+  "originalPrice": 32.80,
+  "image": "https://www.figma.com/api/mcp/asset/0c995e0e-5422-4f78-8811-4bedf5e98433",
+  "images": [
+    "https://www.figma.com/api/mcp/asset/0c995e0e-5422-4f78-8811-4bedf5e98433",
+    "https://www.figma.com/api/mcp/asset/e6a50e89-6179-4d9b-b15a-b4ca00ad96db",
+    "https://www.figma.com/api/mcp/asset/ef04503f-e9ad-415b-a8fa-b4ea28a4e92c"
+  ],
+  "description": "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aliquam rem officia, corrupti reiciendis minima nisi modi, quasi, odio minus dolore impedit fuga eum eligendi.",
+  "detailDescription": {
+    "intro": [
+      "Uninhibited carnally hired played in whimpered dear gorilla koala depending and much yikes off far quetzal goodness and from for grimaced goodness unaccountably and meadowlark near unblushingly crucial scallop tightly neurotic hungrily some and dear furiously this apart.",
+      "Spluttered narrowly yikes left moth in yikes bowed this that grizzly much hello on spoon-fed that alas rethought much decently richly and wow against the frequent fluidly at formidable acceptably flapped besides and much circa far over the bucolically hey precarious goldfinch mastodon goodness gnashed a jellyfish and one however because."
+    ],
+    "specifications": [
+      { "label": "Type Of Packing", "value": "Bottle" },
+      { "label": "Color", "value": "Green, Pink, Powder Blue, Purple" },
+      { "label": "Quantity Per Case", "value": "100ml" },
+      { "label": "Ethyl Alcohol", "value": "70%" },
+      { "label": "Piece In One", "value": "Carton" }
+    ],
+    "additionalDesc": "Laconic overheard dear woodchuck wow this outrageously taut beaver hey hello far meadowlark imitatively egregiously hugged that yikes minimally unanimous pouted flirtatiously as beaver beheld above forward energetic across this jeepers beneficently cockily less a the raucously that magic upheld far so the this where crud then below after jeez enchanting drunkenly more much wow callously irrespective limpet.",
+    "packaging": [
+      "Less lion goodness that euphemistically robin expeditiously bluebird smugly scratched far while thus cackled sheepishly rigid after due one assenting regarding censorious while occasional or this more crane went more as this less much amid overhung anathematic because much held one exuberantly sheep goodness so where rat wry well concomitantly.",
+      "Scallop or far crud plain remarkably far by thus far iguana lewd precociously and and less rattlesnake contrary caustic wow this near alas and next and pled the yikes articulate about as less cackled dalmatian in much less well jeering for the thanks blindly sentimental whimpered less across objectively fanciful grimaced wildly some wow and rose jeepers outgrew lugubrious luridly irrationally attractively dachshund."
+    ],
+    "suggestedUse": [
+      "Refrigeration not necessary.",
+      "Stir before serving"
+    ],
+    "otherIngredients": [
+      "Organic raw pecans, organic raw cashews.",
+      "This butter was produced using a LTG (Low Temperature Grinding) process",
+      "Made in machinery that processes tree nuts but does not process peanuts, gluten, dairy or soy"
+    ],
+    "warnings": [
+      "Oil separation occurs naturally. May contain pieces of shell."
+    ]
+  },
+  "vendor": "NestFood",
+  "stock": 8,
+  "rating": 4.0,
+  "reviewCount": 32,
+  "type": "Organic",
+  "tags": ["Snack", "Organic", "Brown"],
+  "mfgDate": "2022-06-04",
+  "shelfLife": "70 days",
+  "isFeatured": true
+}
+
+### Product 2: All Natural Italian-Style Chicken Meatballs
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "All Natural Italian-Style Chicken Meatballs",
+  "sku": "STF298KL",
+  "category": "{{meatsId}}",
+  "price": 52.85,
+  "originalPrice": 55.80,
+  "image": "https://www.figma.com/api/mcp/asset/cf8b1c79-f3fa-4d54-b8d5-09c91ad96992",
+  "description": "High-quality chicken meatballs made with all natural ingredients and Italian herbs.",
+  "detailDescription": {
+    "intro": [
+      "Crafted with premium all-natural ingredients, these Italian-style chicken meatballs deliver authentic Mediterranean flavors in every bite. Made using traditional Italian recipes passed down through generations.",
+      "Each meatball is carefully seasoned with aromatic herbs including basil, oregano, and garlic, then slow-cooked to perfection. The result is a tender, juicy texture that melts in your mouth while maintaining its rich, savory taste."
+    ],
+    "specifications": [
+      { "label": "Type Of Packing", "value": "Frozen Package" },
+      { "label": "Weight", "value": "2 lbs (32 oz)" },
+      { "label": "Serving Size", "value": "4 meatballs (85g)" },
+      { "label": "Protein Content", "value": "18g per serving" },
+      { "label": "Storage", "value": "Keep Frozen" }
+    ],
+    "additionalDesc": "Our crispy coating locks in the chicken's natural juices while providing the perfect crunch. Made with premium chicken and cooked using advanced freezing technology to preserve flavor and texture.",
+    "packaging": [
+      "Each package is vacuum-sealed to preserve freshness and flavor. The resealable packaging allows for convenient storage and portion control.",
+      "Our eco-friendly packaging is designed to minimize environmental impact while ensuring the product stays fresh from freezer to table."
+    ],
+    "suggestedUse": [
+      "Cook from frozen - do not thaw",
+      "Heat in oven at 350°F for 15-20 minutes",
+      "Can be microwaved for quick preparation"
+    ],
+    "otherIngredients": [
+      "Ground chicken, breadcrumbs, eggs, Italian herbs",
+      "Natural seasonings: garlic, onion, basil, oregano",
+      "No artificial preservatives or additives"
+    ],
+    "warnings": [
+      "Keep frozen until ready to cook",
+      "Cook thoroughly to internal temperature of 165°F"
+    ]
+  },
+  "vendor": "Stouffer",
+  "stock": 12,
+  "rating": 4.0,
+  "reviewCount": 28,
+  "type": "Natural",
+  "tags": ["Meat", "Italian", "Natural"],
+  "mfgDate": "2022-03-15",
+  "shelfLife": "45 days"
+}
+
+### Product 3: Angie's Boomchickapop Sweet & Salty
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Angie's Boomchickapop Sweet & Salty",
+  "sku": "ANG487PQ",
+  "category": "{{bakingMaterialId}}",
+  "price": 48.85,
+  "originalPrice": 52.80,
+  "image": "https://www.figma.com/api/mcp/asset/5d070664-bc86-4eb3-8f00-39e11d83bdba",
+  "description": "Delicious sweet and salty popcorn perfect for snacking anytime.",
+  "detailDescription": {
+    "intro": [
+      "Experience the perfect balance of sweet and salty in every kernel with Angie's Boomchickapop. This gourmet popcorn combines the rich sweetness of caramel with just the right touch of sea salt.",
+      "Made with simple, wholesome ingredients and popped to perfection, this snack delivers a satisfying crunch and irresistible flavor that keeps you coming back for more."
+    ],
+    "specifications": [
+      { "label": "Type Of Packing", "value": "Resealable Bag" },
+      { "label": "Net Weight", "value": "6 oz (170g)" },
+      { "label": "Serving Size", "value": "1 cup (28g)" },
+      { "label": "Calories", "value": "150 per serving" },
+      { "label": "Gluten Free", "value": "Yes" }
+    ],
+    "additionalDesc": "This artisanal popcorn is made in small batches to ensure maximum freshness and flavor. The sweet and salty combination makes it perfect for movie nights, parties, or whenever you need a delicious snack.",
+    "packaging": [
+      "The resealable bag design keeps the popcorn fresh and crunchy for extended periods. Perfect for on-the-go snacking or sharing with friends and family.",
+      "Our packaging is designed with sustainability in mind, using recyclable materials wherever possible while maintaining product freshness."
+    ],
+    "suggestedUse": [
+      "Store in a cool, dry place",
+      "Reseal bag after opening to maintain freshness",
+      "Perfect for sharing or individual snacking"
+    ],
+    "otherIngredients": [
+      "Non-GMO popcorn, cane sugar, sea salt",
+      "Natural vanilla flavor, coconut oil",
+      "No artificial colors or preservatives"
+    ],
+    "warnings": [
+      "May contain traces of nuts",
+      "Keep away from direct sunlight"
+    ]
+  },
+  "vendor": "StarKist",
+  "stock": 15,
+  "rating": 4.0,
+  "reviewCount": 45,
+  "type": "Snack",
+  "tags": ["Snack", "Sweet", "Salty"],
+  "mfgDate": "2022-08-20",
+  "shelfLife": "60 days"
+}
+
+### Product 4: Foster Farms Takeout Crispy Classic
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Foster Farms Takeout Crispy Classic",
+  "sku": "FF789XY",
+  "category": "{{meatsId}}",
+  "price": 17.85,
+  "originalPrice": 19.80,
+  "image": "https://www.figma.com/api/mcp/asset/38f1291e-0655-4669-92a7-f26025c7b0a4",
+  "description": "Crispy and delicious chicken perfect for quick meals.",
+  "vendor": "NestFood",
+  "stock": 6,
+  "rating": 4.0,
+  "reviewCount": 23,
+  "type": "Frozen",
+  "tags": ["Chicken", "Crispy", "Quick"],
+  "mfgDate": "2022-09-10",
+  "shelfLife": "30 days"
+}
+
+### Product 5: Blue Diamond Almonds Lightly Salted
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Blue Diamond Almonds Lightly Salted",
+  "sku": "BD456MN",
+  "category": "{{bakingMaterialId}}",
+  "price": 23.85,
+  "originalPrice": 25.80,
+  "image": "https://www.figma.com/api/mcp/asset/1784331e-c6f3-477d-84ed-9af4dcdafed6",
+  "description": "Premium lightly salted almonds, perfect for healthy snacking.",
+  "vendor": "NestFood",
+  "stock": 20,
+  "rating": 4.0,
+  "reviewCount": 67,
+  "type": "Natural",
+  "tags": ["Nuts", "Healthy", "Salted"],
+  "mfgDate": "2022-07-05",
+  "shelfLife": "180 days"
+}
+
+### Product 6: Chobani Complete Vanilla Greek Yogurt
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Chobani Complete Vanilla Greek Yogurt",
+  "sku": "CHO123VG",
+  "category": "{{milksDairiesId}}",
+  "price": 54.85,
+  "originalPrice": 59.80,
+  "image": "https://www.figma.com/api/mcp/asset/392f63cb-d79e-4d4f-9bbb-553671bf7c84",
+  "description": "Rich and creamy Greek yogurt with natural vanilla flavor.",
+  "vendor": "NestFood",
+  "stock": 25,
+  "rating": 4.0,
+  "reviewCount": 89,
+  "type": "Dairy",
+  "tags": ["Yogurt", "Greek", "Vanilla"],
+  "mfgDate": "2022-02-28",
+  "shelfLife": "21 days"
+}
+
+### Product 7: Canada Dry Ginger Ale – 2 L Bottle
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Canada Dry Ginger Ale – 2 L Bottle",
+  "sku": "CD789GA",
+  "category": "{{bakingMaterialId}}",
+  "price": 32.85,
+  "originalPrice": 33.80,
+  "image": "https://www.figma.com/api/mcp/asset/c0cd52fc-afbd-4fec-92f5-f4fc4be35096",
+  "description": "Refreshing ginger ale with natural ginger flavor.",
+  "vendor": "NestFood",
+  "stock": 50,
+  "rating": 4.0,
+  "reviewCount": 156,
+  "type": "Beverage",
+  "tags": ["Beverage", "Ginger", "Refreshing"],
+  "mfgDate": "2022-10-01",
+  "shelfLife": "365 days"
+}
+
+### Product 8: Encore Seafoods Stuffed Alaskan Salmon
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Encore Seafoods Stuffed Alaskan Salmon",
+  "sku": "ENC567AS",
+  "category": "{{meatsId}}",
+  "price": 35.85,
+  "originalPrice": 37.80,
+  "image": "https://www.figma.com/api/mcp/asset/81dd1fd3-63d5-4bbc-8ea6-876ac442bb34",
+  "description": "Premium Alaskan salmon stuffed with delicious seafood mixture.",
+  "vendor": "NestFood",
+  "stock": 4,
+  "rating": 4.0,
+  "reviewCount": 34,
+  "type": "Fresh",
+  "tags": ["Seafood", "Salmon", "Premium"],
+  "mfgDate": "2022-11-12",
+  "shelfLife": "7 days"
+}
+
+### Product 9: Gorton's Beer Battered Fish Fillets
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Gorton's Beer Battered Fish Fillets",
+  "sku": "GOR890BF",
+  "category": "{{meatsId}}",
+  "price": 23.85,
+  "originalPrice": 25.80,
+  "image": "https://www.figma.com/api/mcp/asset/27ef38eb-c8bf-416e-b46c-b09eb0b56080",
+  "description": "Crispy beer battered fish fillets, easy to prepare.",
+  "vendor": "Old El Paso",
+  "stock": 18,
+  "rating": 4.0,
+  "reviewCount": 78,
+  "type": "Frozen",
+  "tags": ["Fish", "Battered", "Frozen"],
+  "mfgDate": "2022-04-18",
+  "shelfLife": "90 days"
+}
+
+### Product 10: Haagen-Dazs Caramel Cone Ice Cream
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Haagen-Dazs Caramel Cone Ice Cream",
+  "sku": "HD234CC",
+  "category": "{{milksDairiesId}}",
+  "price": 22.85,
+  "originalPrice": 24.80,
+  "image": "https://www.figma.com/api/mcp/asset/1136d3d6-8327-47f2-b8fa-2da8f9afa825",
+  "description": "Premium ice cream with caramel swirls and cone pieces.",
+  "vendor": "Tyson",
+  "stock": 14,
+  "rating": 4.0,
+  "reviewCount": 123,
+  "type": "Frozen",
+  "tags": ["Ice Cream", "Caramel", "Premium"],
+  "mfgDate": "2022-05-25",
+  "shelfLife": "180 days"
+}
+
+### Product 11: Fresh Organic Broccoli Crowns
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Fresh Organic Broccoli Crowns",
+  "sku": "FOB345BC",
+  "category": "{{vegetablesId}}",
+  "price": 15.85,
+  "originalPrice": 17.80,
+  "image": "https://www.figma.com/api/mcp/asset/dfee1f73-b070-4898-bd8d-e2fa454c3b5d",
+  "description": "Fresh organic broccoli crowns, rich in vitamins and minerals.",
+  "vendor": "NestFood",
+  "stock": 30,
+  "rating": 4.0,
+  "reviewCount": 45,
+  "type": "Organic",
+  "tags": ["Vegetable", "Organic", "Fresh"],
+  "mfgDate": "2022-12-01",
+  "shelfLife": "7 days"
+}
+
+### Product 12: Fresh Organic Strawberries
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Fresh Organic Strawberries",
+  "sku": "FOS678ST",
+  "category": "{{freshFruitsId}}",
+  "price": 28.85,
+  "originalPrice": 32.80,
+  "image": "https://www.figma.com/api/mcp/asset/ba0cd317-3129-4ad2-ac6f-49a67075b92d",
+  "description": "Sweet and juicy organic strawberries, perfect for desserts.",
+  "vendor": "NestFood",
+  "stock": 22,
+  "rating": 4.0,
+  "reviewCount": 67,
+  "type": "Organic",
+  "tags": ["Fruit", "Organic", "Sweet"],
+  "mfgDate": "2022-06-15",
+  "shelfLife": "5 days"
+}
+
+### Product 13: Fresh Organic Bananas
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Fresh Organic Bananas",
+  "sku": "FOB901BN",
+  "category": "{{freshFruitsId}}",
+  "price": 12.85,
+  "originalPrice": 15.80,
+  "image": "https://www.figma.com/api/mcp/asset/d3059143-78ad-4b03-9746-d4f6a84817fa",
+  "description": "Fresh organic bananas, great source of potassium and energy.",
+  "vendor": "NestFood",
+  "stock": 40,
+  "rating": 4.0,
+  "reviewCount": 89,
+  "type": "Organic",
+  "tags": ["Fruit", "Organic", "Potassium"],
+  "mfgDate": "2022-11-20",
+  "shelfLife": "10 days"
+}
+
+### Product 14: Fresh Organic Carrots
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Fresh Organic Carrots",
+  "sku": "FOC234CR",
+  "category": "{{vegetablesId}}",
+  "price": 8.85,
+  "originalPrice": 10.80,
+  "image": "https://www.figma.com/api/mcp/asset/6605c5f3-6bbc-4cc2-bd33-9b7d969a480a",
+  "description": "Crisp and sweet organic carrots, perfect for cooking or snacking.",
+  "vendor": "NestFood",
+  "stock": 35,
+  "rating": 4.0,
+  "reviewCount": 56,
+  "type": "Organic",
+  "tags": ["Vegetable", "Organic", "Sweet"],
+  "mfgDate": "2022-10-30",
+  "shelfLife": "14 days"
+}
+
+### Product 15: Organic Whole Milk
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Organic Whole Milk",
+  "sku": "OWM567ML",
+  "category": "{{milksDairiesId}}",
+  "price": 18.85,
+  "originalPrice": 22.80,
+  "image": "https://www.figma.com/api/mcp/asset/1c1c7616-72a4-4bc5-97ce-113b44013604",
+  "description": "Fresh organic whole milk from grass-fed cows.",
+  "vendor": "NestFood",
+  "stock": 28,
+  "rating": 4.0,
+  "reviewCount": 234,
+  "type": "Organic",
+  "tags": ["Milk", "Organic", "Whole"],
+  "mfgDate": "2022-12-05",
+  "shelfLife": "14 days"
+}
+
+### ============================================
+### VERIFICATION
+### ============================================
+
+### Get all products to verify
+GET {{baseUrl}}/products?per_page=20
+
+### Get products by category
+GET {{baseUrl}}/products?category={{bakingMaterialId}}
+
+### Get products with pagination
+GET {{baseUrl}}/products?page=1&per_page=8
+

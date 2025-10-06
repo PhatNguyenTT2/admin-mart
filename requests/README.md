@@ -25,6 +25,20 @@
 
 ## 🚀 Quick Start
 
+### 🎯 **NEW: Populate Database with Mock Data**
+
+**Want 15 products + 5 categories instantly?**
+
+**→ See**: `QUICK_POPULATE.md` for complete guide!
+
+**Files to use**:
+1. `categories.rest` - Create 5 categories (2 min)
+2. `create_all_products.rest` - Create 15 products (5 min)
+
+**Total time**: ~7 minutes
+
+---
+
 ### Step 1: Đăng nhập để lấy Token tự động
 
 **Mỗi file `.rest` đã có sẵn phần Login ở đầu!**
