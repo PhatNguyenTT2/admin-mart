@@ -6,6 +6,7 @@ const Customer = require('../models/customer')
 const Inventory = require('../models/inventory')
 const Payment = require('../models/payment')
 const PurchaseOrder = require('../models/purchaseOrder')
+const Supplier = require('../models/supplier')
 const { userExtractor } = require('../utils/auth')
 
 // GET /api/reports - Get all reports with filtering
@@ -48,6 +49,199 @@ reportsRouter.get('/', userExtractor, async (request, response) => {
     response.status(500).json({ error: error.message })
   }
 })
+
+// POST /api/reports - Generic report generation (routes to specific type)
+reportsRouter.post('/', userExtractor, async (request, response) => {
+  try {
+    const { reportType, title, period, format = 'pdf', parameters = {} } = request.body
+
+    // Validate required fields
+    if (!reportType) {
+      return response.status(400).json({ error: 'reportType is required' })
+    }
+
+    if (!title) {
+      return response.status(400).json({ error: 'title is required' })
+    }
+
+    // Create report record
+    const report = new Report({
+      reportType,
+      title,
+      period: period || {},
+      format,
+      parameters,
+      generatedBy: request.user.id,
+      status: 'pending'
+    })
+
+    await report.save()
+
+    // Generate report data based on type
+    let reportData = {}
+
+    try {
+      switch (reportType) {
+        case 'sales':
+          reportData = await generateSalesReport(period, parameters)
+          break
+        case 'inventory':
+          reportData = await generateInventoryReport(period, parameters)
+          break
+        case 'revenue':
+          reportData = await generateRevenueReport(period, parameters)
+          break
+        case 'profit':
+          reportData = await generateProfitReport(period, parameters)
+          break
+        case 'customer':
+          reportData = await generateCustomerReport(period, parameters)
+          break
+        case 'product':
+          reportData = await generateProductReport(period, parameters)
+          break
+        case 'supplier':
+          reportData = await generateSupplierReport(period, parameters)
+          break
+        default:
+          throw new Error(`Unsupported report type: ${reportType}`)
+      }
+
+      // Update report with data
+      report.data = reportData
+      report.status = 'completed'
+      report.generatedAt = new Date()
+      report.fileUrl = `/reports/${report._id}/download` // Mock URL
+      await report.save()
+
+      response.status(201).json({
+        message: 'Report generated successfully',
+        report
+      })
+    } catch (error) {
+      report.status = 'failed'
+      report.data = { error: error.message }
+      await report.save()
+      throw error
+    }
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
+// Helper functions for generating reports
+async function generateSalesReport(period, parameters) {
+  const filter = {}
+  if (period?.startDate) filter.createdAt = { $gte: new Date(period.startDate) }
+  if (period?.endDate) {
+    filter.createdAt = { ...filter.createdAt, $lte: new Date(period.endDate) }
+  }
+
+  const orders = await Order.find(filter).populate('items.product')
+
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0)
+  const totalOrders = orders.length
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+
+  return {
+    summary: { totalRevenue, totalOrders, averageOrderValue },
+    orders: parameters.includeDetails ? orders : undefined
+  }
+}
+
+async function generateInventoryReport(period, parameters) {
+  const inventory = await Inventory.find().populate('product')
+
+  const totalValue = inventory.reduce((sum, inv) =>
+    sum + (inv.quantityOnHand * (inv.product?.price || 0)), 0
+  )
+
+  return {
+    summary: {
+      totalItems: inventory.length,
+      totalValue,
+      lowStock: inventory.filter(i => i.quantityAvailable <= i.reorderPoint).length,
+      outOfStock: inventory.filter(i => i.quantityAvailable === 0).length
+    },
+    items: parameters.includeDetails ? inventory : undefined
+  }
+}
+
+async function generateRevenueReport(period, parameters) {
+  const filter = {}
+  if (period?.startDate) filter.paymentDate = { $gte: new Date(period.startDate) }
+  if (period?.endDate) {
+    filter.paymentDate = { ...filter.paymentDate, $lte: new Date(period.endDate) }
+  }
+  filter.status = 'completed'
+
+  const payments = await Payment.find(filter)
+  const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0)
+
+  return {
+    summary: { totalRevenue, totalTransactions: payments.length },
+    payments: parameters.includeDetails ? payments : undefined
+  }
+}
+
+async function generateProfitReport(period, parameters) {
+  // Simplified profit calculation
+  const filter = {}
+  if (period?.startDate) filter.createdAt = { $gte: new Date(period.startDate) }
+  if (period?.endDate) {
+    filter.createdAt = { ...filter.createdAt, $lte: new Date(period.endDate) }
+  }
+
+  const orders = await Order.find(filter)
+  const revenue = orders.reduce((sum, o) => sum + o.total, 0)
+
+  // Mock cost calculation (70% of revenue)
+  const cost = revenue * 0.7
+  const profit = revenue - cost
+  const margin = revenue > 0 ? (profit / revenue) * 100 : 0
+
+  return {
+    summary: { revenue, cost, profit, margin: margin.toFixed(2) + '%' }
+  }
+}
+
+async function generateCustomerReport(period, parameters) {
+  const customers = await Customer.find()
+
+  const topCustomers = customers
+    .sort((a, b) => b.totalSpent - a.totalSpent)
+    .slice(0, parameters.topCustomersLimit || 10)
+
+  return {
+    summary: {
+      totalCustomers: customers.length,
+      averageSpent: customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.length
+    },
+    topCustomers: parameters.includeTopCustomers ? topCustomers : undefined
+  }
+}
+
+async function generateProductReport(period, parameters) {
+  const products = await Product.find().populate('category')
+
+  const topSellers = products
+    .sort((a, b) => b.stock - a.stock)
+    .slice(0, parameters.topProductsLimit || 10)
+
+  return {
+    summary: { totalProducts: products.length },
+    topSellers: parameters.includeBestSellers ? topSellers : undefined
+  }
+}
+
+async function generateSupplierReport(period, parameters) {
+  const suppliers = await Supplier.find()
+
+  return {
+    summary: { totalSuppliers: suppliers.length },
+    suppliers: parameters.includeDetails ? suppliers : undefined
+  }
+}
 
 // GET /api/reports/:id - Get report by ID
 reportsRouter.get('/:id', userExtractor, async (request, response) => {

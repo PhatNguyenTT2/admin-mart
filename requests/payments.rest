@@ -23,10 +23,10 @@ Content-Type: application/json
 ### ============================================
 ### REFERENCE IDs (Update these from other requests)
 ### ============================================
-@orderId1 = 67e3775b81ace97f65644540  # From orders.rest
-@customerId1 = 67e3775b81ace97f65644550  # From customers.rest
-@supplierId1 = 67e3775b81ace97f65644560  # From suppliers.rest
-@poId1 = 67e3775b81ace97f65644570  # From purchaseOrders.rest
+@orderId1 = 68e50d49008c9b9d5c858e74
+@customerId1 = 68e51fe49a2170f73c41dee5
+@supplierId1 = 68e50f52eeb5318975d04fe0
+@poId1 = 68e511a6dbcd1178e7bad136
 
 ### ============================================
 ### CREATE PAYMENTS - SALES (Customer Payments)
@@ -48,7 +48,7 @@ Content-Type: application/json
   "customer": "{{customerId1}}",
   "notes": "Cash payment received at store"
 }
-
+### Extract payment ID
 @payment1Id = {{payment1.response.body.data.payment._id}}
 
 ### 2. Record Payment - Card Payment

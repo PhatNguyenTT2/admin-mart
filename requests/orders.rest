@@ -1,0 +1,777 @@
+### Variables (Switch between local and deployed backend)
+@baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
+
+### ============================================
+### AUTHENTICATION (Run this first!)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token and userId
+@token = {{loginResponse.response.body.data.token}}
+@userId = {{loginResponse.response.body.data.user.id}}
+
+### ============================================
+### PRODUCT IDs (Update these after creating products)
+### ============================================
+### Run create_all_products.rest first, then copy IDs here!
+
+@productId1 = 68e50c69008c9b9d5c858d66
+@productId2 = 68e50c90008c9b9d5c858d7c
+@productId3 = 68e50c96008c9b9d5c858d92
+@productId4 = 68e50c9c008c9b9d5c858da8
+@productId5 = 68e50ca1008c9b9d5c858db9
+@productId6 = 68e50ca4008c9b9d5c858dca
+@productId7 = 68e50ca8008c9b9d5c858ddb
+
+@productId8 = 68e50cae008c9b9d5c858dec
+@productId9 = 68e50cb1008c9b9d5c858dfd
+@productId10 = 68e50cb5008c9b9d5c858e0e
+
+### ============================================
+### CREATE ORDERS - DIFFERENT SCENARIOS
+### ============================================
+
+### Order 1: Simple Guest Order (Cash on Delivery)
+# @name order1Response
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Nguyen Van A",
+    "email": "nguyenvana@example.com",
+    "phone": "0901234567"
+  },
+  "shippingAddress": {
+    "street": "123 Nguyen Hue Street",
+    "city": "Ho Chi Minh City",
+    "state": "Ho Chi Minh",
+    "zipCode": "700000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 2,
+      "price": 28.85
+    },
+    {
+      "product": "{{productId2}}",
+      "quantity": 1,
+      "price": 52.85
+    }
+  ],
+  "paymentMethod": "cash",
+  "shippingFee": 25000,
+  "tax": 0,
+  "discount": 0,
+  "customerNote": "Please deliver in the afternoon"
+}
+
+### Extract Order 1 ID
+@order1Id = {{order1Response.response.body.data.id}}
+
+### Order 2: Authenticated User Order (Card Payment)
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Tran Thi B",
+    "email": "tranthib@example.com",
+    "phone": "0912345678"
+  },
+  "shippingAddress": {
+    "street": "456 Le Loi Boulevard",
+    "city": "Hanoi",
+    "state": "Hanoi",
+    "zipCode": "100000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId3}}",
+      "quantity": 3,
+      "price": 48.85
+    },
+    {
+      "product": "{{productId4}}",
+      "quantity": 2,
+      "price": 15.99
+    }
+  ],
+  "paymentMethod": "card",
+  "shippingFee": 30000,
+  "tax": 5000,
+  "discount": 10000,
+  "customerNote": "Gift wrapping requested"
+}
+
+### Order 3: Large Bulk Order (Bank Transfer)
+# @name order3Response
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Le Van C",
+    "email": "levanc@example.com",
+    "phone": "0923456789"
+  },
+  "shippingAddress": {
+    "street": "789 Tran Hung Dao Street",
+    "city": "Da Nang",
+    "state": "Da Nang",
+    "zipCode": "550000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId5}}",
+      "quantity": 10,
+      "price": 24.50
+    },
+    {
+      "product": "{{productId6}}",
+      "quantity": 8,
+      "price": 35.00
+    },
+    {
+      "product": "{{productId7}}",
+      "quantity": 5,
+      "price": 28.00
+    },
+    {
+      "product": "{{productId8}}",
+      "quantity": 6,
+      "price": 85.00
+    }
+  ],
+  "paymentMethod": "bank_transfer",
+  "shippingFee": 50000,
+  "tax": 15000,
+  "discount": 50000,
+  "customerNote": "Business order - Invoice required",
+  "adminNote": "Priority delivery"
+}
+
+### Extract Order 3 ID
+@order3Id = {{order3Response.response.body.data.id}}
+
+### Order 4: E-Wallet Payment Order
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Pham Thi D",
+    "email": "phamthid@example.com",
+    "phone": "0934567890"
+  },
+  "shippingAddress": {
+    "street": "321 Vo Van Kiet Street",
+    "city": "Can Tho",
+    "state": "Can Tho",
+    "zipCode": "900000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId9}}",
+      "quantity": 4,
+      "price": 25.00
+    },
+    {
+      "product": "{{productId10}}",
+      "quantity": 2,
+      "price": 45.00
+    }
+  ],
+  "paymentMethod": "e_wallet",
+  "shippingFee": 20000,
+  "tax": 3000,
+  "discount": 5000,
+  "customerNote": "Call before delivery"
+}
+
+### Order 5: Mixed Products Order
+# @name order5Response
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Hoang Van E",
+    "email": "hoangvane@example.com",
+    "phone": "0945678901"
+  },
+  "shippingAddress": {
+    "street": "654 Hai Ba Trung Street",
+    "city": "Hue",
+    "state": "Thua Thien Hue",
+    "zipCode": "530000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 1,
+      "price": 28.85
+    },
+    {
+      "product": "{{productId3}}",
+      "quantity": 2,
+      "price": 48.85
+    },
+    {
+      "product": "{{productId5}}",
+      "quantity": 3,
+      "price": 24.50
+    },
+    {
+      "product": "{{productId7}}",
+      "quantity": 1,
+      "price": 28.00
+    },
+    {
+      "product": "{{productId9}}",
+      "quantity": 2,
+      "price": 25.00
+    }
+  ],
+  "paymentMethod": "cash",
+  "shippingFee": 35000,
+  "tax": 8000,
+  "discount": 15000,
+  "customerNote": "Leave at the door if no one home"
+}
+
+### Extract Order 5 ID
+@order5Id = {{order5Response.response.body.data.id}}
+
+### Order 6: Premium Customer Order
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Nguyen Thi F",
+    "email": "nguyenthif@example.com",
+    "phone": "0956789012"
+  },
+  "shippingAddress": {
+    "street": "987 Nguyen Trai Street",
+    "city": "Ho Chi Minh City",
+    "state": "Ho Chi Minh",
+    "zipCode": "700000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId2}}",
+      "quantity": 5,
+      "price": 52.85
+    },
+    {
+      "product": "{{productId4}}",
+      "quantity": 10,
+      "price": 15.99
+    },
+    {
+      "product": "{{productId6}}",
+      "quantity": 4,
+      "price": 35.00
+    }
+  ],
+  "paymentMethod": "card",
+  "shippingFee": 0,
+  "tax": 10000,
+  "discount": 100000,
+  "customerNote": "VIP Customer - Free shipping applied",
+  "adminNote": "Premium member since 2020"
+}
+
+### Order 7: Quick Snack Order
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Tran Van G",
+    "email": "tranvang@example.com",
+    "phone": "0967890123"
+  },
+  "shippingAddress": {
+    "street": "159 Pasteur Street",
+    "city": "Ho Chi Minh City",
+    "state": "Ho Chi Minh",
+    "zipCode": "700000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 2,
+      "price": 28.85
+    },
+    {
+      "product": "{{productId3}}",
+      "quantity": 1,
+      "price": 48.85
+    }
+  ],
+  "paymentMethod": "e_wallet",
+  "shippingFee": 15000,
+  "tax": 2000,
+  "discount": 0,
+  "customerNote": "Express delivery please"
+}
+
+### Order 8: Wholesale Order
+# @name order8Response
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Phan Thi H",
+    "email": "phanthih@example.com",
+    "phone": "0978901234"
+  },
+  "shippingAddress": {
+    "street": "753 Cach Mang Thang 8 Street",
+    "city": "Ho Chi Minh City",
+    "state": "Ho Chi Minh",
+    "zipCode": "700000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId5}}",
+      "quantity": 20,
+      "price": 24.50
+    },
+    {
+      "product": "{{productId7}}",
+      "quantity": 15,
+      "price": 28.00
+    },
+    {
+      "product": "{{productId9}}",
+      "quantity": 25,
+      "price": 25.00
+    }
+  ],
+  "paymentMethod": "bank_transfer",
+  "shippingFee": 100000,
+  "tax": 30000,
+  "discount": 200000,
+  "customerNote": "Wholesale order - delivery to warehouse",
+  "adminNote": "Verified wholesale customer"
+}
+
+### Extract Order 8 ID
+@order8Id = {{order8Response.response.body.data.id}}
+
+### Order 9: International Shipping Order
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Le Thi I",
+    "email": "lethii@example.com",
+    "phone": "0989012345"
+  },
+  "shippingAddress": {
+    "street": "246 Nam Ky Khoi Nghia Street",
+    "city": "Ho Chi Minh City",
+    "state": "Ho Chi Minh",
+    "zipCode": "700000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId2}}",
+      "quantity": 3,
+      "price": 52.85
+    },
+    {
+      "product": "{{productId4}}",
+      "quantity": 5,
+      "price": 15.99
+    },
+    {
+      "product": "{{productId8}}",
+      "quantity": 2,
+      "price": 85.00
+    }
+  ],
+  "paymentMethod": "card",
+  "shippingFee": 150000,
+  "tax": 25000,
+  "discount": 30000,
+  "customerNote": "International shipping - handle with care"
+}
+
+### Order 10: Student Discount Order
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Vo Van K",
+    "email": "vovank@example.com",
+    "phone": "0990123456"
+  },
+  "shippingAddress": {
+    "street": "135 Ly Thuong Kiet Street",
+    "city": "Hanoi",
+    "state": "Hanoi",
+    "zipCode": "100000",
+    "country": "Vietnam"
+  },
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 1,
+      "price": 28.85
+    },
+    {
+      "product": "{{productId6}}",
+      "quantity": 2,
+      "price": 35.00
+    }
+  ],
+  "paymentMethod": "e_wallet",
+  "shippingFee": 20000,
+  "tax": 3000,
+  "discount": 20000,
+  "customerNote": "Student discount applied - ID: STU123456"
+}
+
+### ============================================
+### GET ORDERS - RETRIEVE & FILTER
+### ============================================
+
+### Get all orders (Admin)
+GET {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+
+### Get order by ID
+GET {{baseUrl}}/orders/{{order1Id}}
+Authorization: Bearer {{token}}
+
+### Get orders by status (pending)
+GET {{baseUrl}}/orders?status=pending
+Authorization: Bearer {{token}}
+
+### Get orders by status (processing)
+GET {{baseUrl}}/orders?status=processing
+Authorization: Bearer {{token}}
+
+### Get orders by payment method (cash)
+GET {{baseUrl}}/orders?paymentMethod=cash
+Authorization: Bearer {{token}}
+
+### Get orders by payment status (pending)
+GET {{baseUrl}}/orders?paymentStatus=pending
+Authorization: Bearer {{token}}
+
+### Get orders with pagination
+GET {{baseUrl}}/orders?page=1&limit=5
+Authorization: Bearer {{token}}
+
+### Get orders sorted by date (newest first)
+GET {{baseUrl}}/orders?sort=-createdAt
+Authorization: Bearer {{token}}
+
+### Get orders sorted by total (highest first)
+GET {{baseUrl}}/orders?sort=-total
+Authorization: Bearer {{token}}
+
+### Search orders by customer name
+GET {{baseUrl}}/orders?search=Nguyen
+Authorization: Bearer {{token}}
+
+### Search orders by customer email
+GET {{baseUrl}}/orders?search=example.com
+Authorization: Bearer {{token}}
+
+### Search orders by order number
+GET {{baseUrl}}/orders?search=ORD
+Authorization: Bearer {{token}}
+
+### Get orders by date range
+GET {{baseUrl}}/orders?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Get recent orders (last 7 days)
+GET {{baseUrl}}/orders?days=7
+Authorization: Bearer {{token}}
+
+### ============================================
+### UPDATE ORDERS
+### ============================================
+
+### Update order status to processing
+PATCH {{baseUrl}}/orders/{{order1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "processing"
+}
+
+### Update order status to shipping
+PATCH {{baseUrl}}/orders/{{order1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "shipping",
+  "trackingNumber": "VN1234567890"
+}
+
+### Update order status to delivered
+PATCH {{baseUrl}}/orders/{{order1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "delivered"
+}
+
+### Update order payment status
+PATCH {{baseUrl}}/orders/{{order3Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentStatus": "paid"
+}
+
+### Update order with admin note
+PATCH {{baseUrl}}/orders/{{order5Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "adminNote": "Customer requested faster delivery - upgraded to express shipping"
+}
+
+### Update order shipping address
+PATCH {{baseUrl}}/orders/{{order3Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "shippingAddress": {
+    "street": "New Address 999",
+    "city": "Ho Chi Minh City",
+    "state": "Ho Chi Minh",
+    "zipCode": "700000",
+    "country": "Vietnam"
+  }
+}
+
+### ============================================
+### CANCEL ORDERS
+### ============================================
+
+### Cancel order
+PATCH {{baseUrl}}/orders/{{order5Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "cancelled",
+  "adminNote": "Cancelled by customer request"
+}
+
+### ============================================
+### ORDER STATISTICS
+### ============================================
+
+### Get order statistics (total orders, revenue, etc.)
+GET {{baseUrl}}/orders/stats/summary
+Authorization: Bearer {{token}}
+
+### Get order statistics by date
+GET {{baseUrl}}/orders/stats/by-date?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Get order statistics by status
+GET {{baseUrl}}/orders/stats/by-status
+Authorization: Bearer {{token}}
+
+### Get order statistics by payment method
+GET {{baseUrl}}/orders/stats/by-payment-method
+Authorization: Bearer {{token}}
+
+### Get top customers by order count
+GET {{baseUrl}}/orders/stats/top-customers?limit=10
+Authorization: Bearer {{token}}
+
+### Get revenue statistics
+GET {{baseUrl}}/orders/stats/revenue?period=month
+Authorization: Bearer {{token}}
+
+### ============================================
+### DELETE ORDERS (Admin only)
+### ============================================
+
+### Delete order (soft delete - marks as cancelled)
+DELETE {{baseUrl}}/orders/{{order8Id}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### VALIDATION TESTS
+### ============================================
+
+### Test: Create order without customer info (should fail)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 1,
+      "price": 28.85
+    }
+  ],
+  "paymentMethod": "cash"
+}
+
+### Test: Create order without items (should fail)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Test User",
+    "email": "test@example.com",
+    "phone": "0900000000"
+  },
+  "paymentMethod": "cash"
+}
+
+### Test: Create order with invalid product ID (should fail)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Test User",
+    "email": "test@example.com",
+    "phone": "0900000000"
+  },
+  "items": [
+    {
+      "product": "invalid_product_id",
+      "quantity": 1,
+      "price": 10.00
+    }
+  ],
+  "paymentMethod": "cash"
+}
+
+### Test: Create order with negative quantity (should fail)
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customer": {
+    "name": "Test User",
+    "email": "test@example.com",
+    "phone": "0900000000"
+  },
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": -1,
+      "price": 28.85
+    }
+  ],
+  "paymentMethod": "cash"
+}
+
+### Test: Update order without authentication (should fail)
+PATCH {{baseUrl}}/orders/{{order1Id}}
+Content-Type: application/json
+
+{
+  "status": "processing"
+}
+
+### Test: Get orders without authentication (should fail)
+GET {{baseUrl}}/orders
+
+### ============================================
+### BULK OPERATIONS
+### ============================================
+
+### Bulk update order status
+PATCH {{baseUrl}}/orders/bulk/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "orderIds": ["{{order1Id}}", "{{order3Id}}", "{{order5Id}}"],
+  "status": "processing"
+}
+
+### Bulk export orders to CSV
+GET {{baseUrl}}/orders/export/csv?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Bulk export orders to Excel
+GET {{baseUrl}}/orders/export/excel?status=delivered
+Authorization: Bearer {{token}}
+
+### ============================================
+### NOTES
+### ============================================
+# 1. Always run login first to get authentication token
+# 2. Copy product IDs from create_all_products.rest after creating products
+# 3. Order numbers are auto-generated (ORD2510000001)
+# 4. Payment methods: cash, card, bank_transfer, e_wallet
+# 5. Order status workflow: pending → processing → shipping → delivered
+# 6. Payment status: pending → paid (or failed/refunded)
+# 7. Shipping fees, tax, and discount are optional
+# 8. customerNote is for customer, adminNote is for internal use
+# 9. Orders can be cancelled but not deleted (soft delete)
+# 10. Use statistics endpoints for business intelligence
+
+### ============================================
+### ORDER STATUS WORKFLOW
+### ============================================
+# pending → processing → shipping → delivered ✓
+#                    ↓
+#              cancelled ✗
+
+### ============================================
+### PAYMENT STATUS WORKFLOW
+### ============================================
+# pending → paid ✓
+#      ↓
+#   failed ✗
+#      ↓
+#  refunded ↩️

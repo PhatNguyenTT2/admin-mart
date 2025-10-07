@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
-    required: [true, 'Order number is required'],
-    required: true
+    unique: true
   },
 
   // Customer info

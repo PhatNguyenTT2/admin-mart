@@ -4,7 +4,6 @@ const purchaseOrderSchema = new mongoose.Schema({
   poNumber: {
     type: String,
     unique: true,
-    required: true,
     // Auto-generate: PO2025000001
   },
 

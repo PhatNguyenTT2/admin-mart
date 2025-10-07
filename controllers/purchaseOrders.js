@@ -189,6 +189,69 @@ purchaseOrdersRouter.post('/', userExtractor, async (request, response) => {
   }
 })
 
+// PATCH /api/purchase-orders/:id - Partial update purchase order
+purchaseOrdersRouter.patch('/:id', userExtractor, async (request, response) => {
+  try {
+    const purchaseOrder = await PurchaseOrder.findById(request.params.id)
+
+    if (!purchaseOrder) {
+      return response.status(404).json({ error: 'Purchase order not found' })
+    }
+
+    // Only draft and pending orders can be updated
+    if (!['draft', 'pending'].includes(purchaseOrder.status)) {
+      return response.status(400).json({
+        error: 'Only draft or pending purchase orders can be updated'
+      })
+    }
+
+    const {
+      expectedDeliveryDate,
+      items,
+      shippingFee,
+      tax,
+      discount,
+      notes
+    } = request.body
+
+    // If items are being updated, verify products and cache info
+    if (items) {
+      const enhancedItems = []
+      for (const item of items) {
+        const product = await Product.findById(item.product)
+        if (!product) {
+          return response.status(404).json({
+            error: `Product ${item.product} not found`
+          })
+        }
+
+        enhancedItems.push({
+          ...item,
+          productName: product.name,
+          sku: product.sku,
+          received: 0
+        })
+      }
+      purchaseOrder.items = enhancedItems
+    }
+
+    if (expectedDeliveryDate !== undefined) purchaseOrder.expectedDeliveryDate = expectedDeliveryDate
+    if (shippingFee !== undefined) purchaseOrder.shippingFee = shippingFee
+    if (tax !== undefined) purchaseOrder.tax = tax
+    if (discount !== undefined) purchaseOrder.discount = discount
+    if (notes !== undefined) purchaseOrder.notes = notes
+
+    const updatedPurchaseOrder = await purchaseOrder.save()
+
+    await updatedPurchaseOrder.populate('supplier', 'supplierCode companyName')
+    await updatedPurchaseOrder.populate('items.product', 'name sku')
+
+    response.json(updatedPurchaseOrder)
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
 // PUT /api/purchase-orders/:id - Update purchase order
 purchaseOrdersRouter.put('/:id', userExtractor, async (request, response) => {
   try {
@@ -252,6 +315,55 @@ purchaseOrdersRouter.put('/:id', userExtractor, async (request, response) => {
   }
 })
 
+// PATCH /api/purchase-orders/:id/status - Update purchase order status
+purchaseOrdersRouter.patch('/:id/status', userExtractor, async (request, response) => {
+  try {
+    const { status, notes } = request.body
+
+    const validStatuses = ['draft', 'pending', 'approved', 'cancelled']
+
+    if (!status || !validStatuses.includes(status)) {
+      return response.status(400).json({
+        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      })
+    }
+
+    const purchaseOrder = await PurchaseOrder.findById(request.params.id)
+
+    if (!purchaseOrder) {
+      return response.status(404).json({ error: 'Purchase order not found' })
+    }
+
+    // Handle status transitions
+    if (status === 'approved') {
+      if (purchaseOrder.status === 'draft') {
+        purchaseOrder.status = 'pending'
+      }
+      await purchaseOrder.approve(request.user.id)
+    } else if (status === 'cancelled') {
+      await purchaseOrder.cancel()
+    } else {
+      purchaseOrder.status = status
+      await purchaseOrder.save()
+    }
+
+    if (notes) {
+      purchaseOrder.notes = notes
+      await purchaseOrder.save()
+    }
+
+    await purchaseOrder.populate('supplier', 'supplierCode companyName')
+    await purchaseOrder.populate('approvedBy', 'username')
+
+    response.json({
+      message: `Purchase order status updated to ${status}`,
+      purchaseOrder
+    })
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
 // PUT /api/purchase-orders/:id/approve - Approve purchase order
 purchaseOrdersRouter.put('/:id/approve', userExtractor, async (request, response) => {
   try {
@@ -281,12 +393,52 @@ purchaseOrdersRouter.put('/:id/approve', userExtractor, async (request, response
   }
 })
 
+// GET /api/purchase-orders/:id/receives - Get receiving history for a PO
+purchaseOrdersRouter.get('/:id/receives', userExtractor, async (request, response) => {
+  try {
+    const purchaseOrder = await PurchaseOrder
+      .findById(request.params.id)
+      .populate('supplier', 'supplierCode companyName')
+      .populate('items.product', 'name sku')
+
+    if (!purchaseOrder) {
+      return response.status(404).json({ error: 'Purchase order not found' })
+    }
+
+    // Return items with receiving information
+    const receivingHistory = purchaseOrder.items.map(item => ({
+      product: item.product,
+      productName: item.productName,
+      sku: item.sku,
+      ordered: item.quantity,
+      received: item.received,
+      remaining: item.quantity - item.received,
+      percentReceived: Math.round((item.received / item.quantity) * 100)
+    }))
+
+    response.json({
+      poNumber: purchaseOrder.poNumber,
+      status: purchaseOrder.status,
+      receivingHistory,
+      summary: {
+        totalItems: purchaseOrder.items.length,
+        fullyReceived: purchaseOrder.items.filter(i => i.received === i.quantity).length,
+        partiallyReceived: purchaseOrder.items.filter(i => i.received > 0 && i.received < i.quantity).length,
+        notReceived: purchaseOrder.items.filter(i => i.received === 0).length
+      }
+    })
+  } catch (error) {
+    response.status(500).json({ error: error.message })
+  }
+})
+
 // POST /api/purchase-orders/:id/receive - Receive items
 purchaseOrdersRouter.post('/:id/receive', userExtractor, async (request, response) => {
   try {
-    const { items } = request.body
+    const { receivedItems, items } = request.body
+    const itemsToReceive = receivedItems || items
 
-    if (!items || items.length === 0) {
+    if (!itemsToReceive || itemsToReceive.length === 0) {
       return response.status(400).json({
         error: 'Items to receive are required'
       })
@@ -304,8 +456,14 @@ purchaseOrdersRouter.post('/:id/receive', userExtractor, async (request, respons
       })
     }
 
+    // Transform received items to match the model's expected format
+    const formattedItems = itemsToReceive.map(item => ({
+      productId: item.product,
+      quantity: item.quantityReceived || item.quantity
+    }))
+
     // Receive items (this will update inventory and product stock)
-    await purchaseOrder.receiveItems(items, request.user.id)
+    await purchaseOrder.receiveItems(formattedItems, request.user.id)
 
     // Update supplier stats
     if (purchaseOrder.status === 'received') {

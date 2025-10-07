@@ -44,7 +44,7 @@ Content-Type: application/json
     "includeCharts": true
   }
 }
-
+### Extract report ID
 @report1Id = {{report1.response.body.data.report._id}}
 
 ### 2. Generate Inventory Report - Monthly

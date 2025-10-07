@@ -23,9 +23,9 @@ Content-Type: application/json
 ### ============================================
 ### PRODUCT IDs (Get from create_all_products.rest)
 ### ============================================
-@productId1 = 67e3775b81ace97f65644532  # Seeds of Change Organic Quinoa
-@productId2 = 67e3775f81ace97f65644546  # Italian Chicken Meatballs
-@productId3 = 67e3776281ace97f6564455a  # Boomchickapop Sweet & Salty
+@productId1 = 68e50c69008c9b9d5c858d66
+@productId2 = 68e50c90008c9b9d5c858d7c
+@productId3 = 68e50c96008c9b9d5c858d92
 
 ### ============================================
 ### VIEW INVENTORY

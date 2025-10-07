@@ -46,8 +46,8 @@ Content-Type: application/json
   "gender": "male",
   "customerType": "retail"
 }
-
-@customer1Id = {{customer1.response.body.data.customer._id}}
+### Extract Customer 1 ID
+@customer1Id = 68e51fe49a2170f73c41dee5
 
 ### 2. Create Customer - Wholesale
 # @name customer2
@@ -70,7 +70,7 @@ Content-Type: application/json
   "gender": "female",
   "customerType": "wholesale"
 }
-
+### Extract Customer 2 ID
 @customer2Id = {{customer2.response.body.data.customer._id}}
 
 ### 3. Create Customer - VIP

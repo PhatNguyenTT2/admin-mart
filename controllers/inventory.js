@@ -3,7 +3,11 @@ const Inventory = require('../models/inventory')
 const Product = require('../models/product')
 const { userExtractor } = require('../utils/auth')
 
-// GET /api/inventory - Get all inventory with filtering
+// ============================================
+// GET ENDPOINTS - View Inventory
+// ============================================
+
+// GET /api/inventory - Get all inventory with filtering & pagination
 inventoryRouter.get('/', userExtractor, async (request, response) => {
   try {
     const {
@@ -14,16 +18,13 @@ inventoryRouter.get('/', userExtractor, async (request, response) => {
       outOfStock
     } = request.query
 
-    // Build filter object
     const filter = {}
 
     if (lowStock === 'true') {
-      // Find items where available <= reorderPoint
       const inventory = await Inventory.find()
       const lowStockIds = inventory
         .filter(inv => inv.quantityAvailable <= inv.reorderPoint)
         .map(inv => inv._id)
-
       filter._id = { $in: lowStockIds }
     }
 
@@ -57,19 +58,17 @@ inventoryRouter.get('/', userExtractor, async (request, response) => {
   }
 })
 
-// GET /api/inventory/stats - Get inventory statistics
-inventoryRouter.get('/stats', userExtractor, async (request, response) => {
+// GET /api/inventory/stats/summary - Get inventory statistics
+inventoryRouter.get('/stats/summary', userExtractor, async (request, response) => {
   try {
     const totalItems = await Inventory.countDocuments()
-
-    // Low stock items
-    const allInventory = await Inventory.find()
-    const lowStockItems = allInventory.filter(inv => inv.quantityAvailable <= inv.reorderPoint)
+    const allInventory = await Inventory.find().populate('product', 'name sku price')
+    
+    const lowStockItems = allInventory.filter(inv => inv.quantityAvailable <= inv.reorderPoint && inv.quantityAvailable > 0)
     const outOfStockItems = allInventory.filter(inv => inv.quantityAvailable === 0)
+    const reorderNeeded = allInventory.filter(inv => inv.quantityAvailable <= inv.reorderPoint)
 
-    // Total inventory value
-    const inventoryWithProducts = await Inventory.find().populate('product', 'price')
-    const totalValue = inventoryWithProducts.reduce(
+    const totalValue = allInventory.reduce(
       (sum, inv) => sum + (inv.quantityOnHand * (inv.product?.price || 0)),
       0
     )
@@ -78,12 +77,11 @@ inventoryRouter.get('/stats', userExtractor, async (request, response) => {
       totalItems,
       lowStockCount: lowStockItems.length,
       outOfStockCount: outOfStockItems.length,
+      reorderNeededCount: reorderNeeded.length,
       totalValue,
-      lowStockItems: lowStockItems.slice(0, 10).map(inv => ({
-        product: inv.product,
-        quantityAvailable: inv.quantityAvailable,
-        reorderPoint: inv.reorderPoint
-      }))
+      totalQuantityOnHand: allInventory.reduce((sum, inv) => sum + inv.quantityOnHand, 0),
+      totalQuantityReserved: allInventory.reduce((sum, inv) => sum + inv.quantityReserved, 0),
+      totalQuantityAvailable: allInventory.reduce((sum, inv) => sum + inv.quantityAvailable, 0)
     })
   } catch (error) {
     response.status(500).json({ error: error.message })
@@ -93,28 +91,65 @@ inventoryRouter.get('/stats', userExtractor, async (request, response) => {
 // GET /api/inventory/low-stock - Get low stock items
 inventoryRouter.get('/low-stock', userExtractor, async (request, response) => {
   try {
+    const { threshold } = request.query
     const allInventory = await Inventory
       .find()
       .populate('product', 'name sku price vendor')
 
-    const lowStockItems = allInventory.filter(
-      inv => inv.quantityAvailable <= inv.reorderPoint && inv.quantityAvailable > 0
-    )
+    const reorderThreshold = threshold ? parseInt(threshold) : null
 
-    const outOfStockItems = allInventory.filter(
-      inv => inv.quantityAvailable === 0
-    )
+    const lowStockItems = allInventory.filter(inv => {
+      const compareValue = reorderThreshold || inv.reorderPoint
+      return inv.quantityAvailable <= compareValue && inv.quantityAvailable > 0
+    })
 
     response.json({
       lowStock: lowStockItems,
-      outOfStock: outOfStockItems
+      count: lowStockItems.length,
+      threshold: reorderThreshold || 'using reorderPoint per item'
     })
   } catch (error) {
     response.status(500).json({ error: error.message })
   }
 })
 
-// GET /api/inventory/product/:productId - Get inventory for a specific product
+// GET /api/inventory/out-of-stock - Get out of stock items
+inventoryRouter.get('/out-of-stock', userExtractor, async (request, response) => {
+  try {
+    const outOfStockItems = await Inventory
+      .find({ quantityAvailable: 0 })
+      .populate('product', 'name sku price vendor')
+
+    response.json({
+      outOfStock: outOfStockItems,
+      count: outOfStockItems.length
+    })
+  } catch (error) {
+    response.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/inventory/reorder-needed - Get items needing reorder
+inventoryRouter.get('/reorder-needed', userExtractor, async (request, response) => {
+  try {
+    const allInventory = await Inventory
+      .find()
+      .populate('product', 'name sku price vendor')
+
+    const reorderNeeded = allInventory.filter(
+      inv => inv.quantityAvailable <= inv.reorderPoint
+    )
+
+    response.json({
+      reorderNeeded,
+      count: reorderNeeded.length
+    })
+  } catch (error) {
+    response.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/inventory/product/:productId - Get inventory for specific product
 inventoryRouter.get('/product/:productId', userExtractor, async (request, response) => {
   try {
     const inventory = await Inventory
@@ -132,15 +167,83 @@ inventoryRouter.get('/product/:productId', userExtractor, async (request, respon
   }
 })
 
-// GET /api/inventory/:id/movements - Get movement history
-inventoryRouter.get('/:id/movements', userExtractor, async (request, response) => {
+// GET /api/inventory/movements - Get all movements across all products
+inventoryRouter.get('/movements', userExtractor, async (request, response) => {
   try {
-    const { page = 1, limit = 20, type } = request.query
+    const { page = 1, limit = 50, performedBy, startDate, endDate } = request.query
+
+    const allInventory = await Inventory
+      .find()
+      .populate('product', 'name sku')
+      .populate('movements.performedBy', 'username')
+
+    let allMovements = []
+    allInventory.forEach(inv => {
+      inv.movements.forEach(movement => {
+        allMovements.push({
+          ...movement.toObject(),
+          product: inv.product
+        })
+      })
+    })
+
+    // Filter by user
+    if (performedBy) {
+      allMovements = allMovements.filter(
+        m => m.performedBy && m.performedBy._id.toString() === performedBy
+      )
+    }
+
+    // Filter by date range
+    if (startDate || endDate) {
+      allMovements = allMovements.filter(m => {
+        const moveDate = new Date(m.date)
+        if (startDate && moveDate < new Date(startDate)) return false
+        if (endDate && moveDate > new Date(endDate)) return false
+        return true
+      })
+    }
+
+    // Sort by date descending
+    allMovements.sort((a, b) => new Date(b.date) - new Date(a.date))
+
+    // Paginate
+    const skip = (parseInt(page) - 1) * parseInt(limit)
+    const paginatedMovements = allMovements.slice(skip, skip + parseInt(limit))
+
+    response.json({
+      movements: paginatedMovements,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: allMovements.length,
+        pages: Math.ceil(allMovements.length / parseInt(limit))
+      }
+    })
+  } catch (error) {
+    response.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/inventory/:productId/movements - Get movement history by product ID
+inventoryRouter.get('/:productId/movements', userExtractor, async (request, response) => {
+  try {
+    const { page = 1, limit = 20, type, startDate, endDate } = request.query
     const skip = (parseInt(page) - 1) * parseInt(limit)
 
-    const inventory = await Inventory
-      .findById(request.params.id)
+    // Try to find by product ID first
+    let inventory = await Inventory
+      .findOne({ product: request.params.productId })
       .populate('movements.performedBy', 'username')
+      .populate('product', 'name sku')
+
+    // If not found, try as inventory ID
+    if (!inventory) {
+      inventory = await Inventory
+        .findById(request.params.productId)
+        .populate('movements.performedBy', 'username')
+        .populate('product', 'name sku')
+    }
 
     if (!inventory) {
       return response.status(404).json({ error: 'Inventory not found' })
@@ -148,17 +251,29 @@ inventoryRouter.get('/:id/movements', userExtractor, async (request, response) =
 
     let movements = inventory.movements
 
+    // Filter by type
     if (type) {
       movements = movements.filter(m => m.type === type)
     }
 
+    // Filter by date range
+    if (startDate || endDate) {
+      movements = movements.filter(m => {
+        const moveDate = new Date(m.date)
+        if (startDate && moveDate < new Date(startDate)) return false
+        if (endDate && moveDate > new Date(endDate)) return false
+        return true
+      })
+    }
+
     // Sort by date descending
-    movements.sort((a, b) => b.date - a.date)
+    movements.sort((a, b) => new Date(b.date) - new Date(a.date))
 
     const paginatedMovements = movements.slice(skip, skip + parseInt(limit))
     const total = movements.length
 
     response.json({
+      product: inventory.product,
       movements: paginatedMovements,
       pagination: {
         page: parseInt(page),
@@ -172,186 +287,488 @@ inventoryRouter.get('/:id/movements', userExtractor, async (request, response) =
   }
 })
 
-// POST /api/inventory - Create inventory for a product
-inventoryRouter.post('/', userExtractor, async (request, response) => {
+// GET /api/inventory/alerts - Get inventory alerts
+inventoryRouter.get('/alerts', userExtractor, async (request, response) => {
   try {
-    const {
-      productId,
-      quantityOnHand,
-      reorderPoint,
-      reorderQuantity,
-      warehouseLocation
-    } = request.body
+    const { type } = request.query
+    const allInventory = await Inventory
+      .find()
+      .populate('product', 'name sku price vendor')
 
-    if (!productId) {
+    let alerts = []
+
+    allInventory.forEach(inv => {
+      if (inv.quantityAvailable === 0) {
+        if (!type || type === 'out_of_stock') {
+          alerts.push({
+            type: 'out_of_stock',
+            severity: 'critical',
+            product: inv.product,
+            quantityAvailable: inv.quantityAvailable,
+            message: `${inv.product.name} is out of stock`
+          })
+        }
+      } else if (inv.quantityAvailable <= inv.reorderPoint) {
+        if (!type || type === 'low_stock' || type === 'reorder_needed') {
+          alerts.push({
+            type: inv.quantityAvailable <= inv.reorderPoint * 0.5 ? 'reorder_needed' : 'low_stock',
+            severity: inv.quantityAvailable <= inv.reorderPoint * 0.5 ? 'high' : 'medium',
+            product: inv.product,
+            quantityAvailable: inv.quantityAvailable,
+            reorderPoint: inv.reorderPoint,
+            reorderQuantity: inv.reorderQuantity,
+            message: `${inv.product.name} needs reorder (${inv.quantityAvailable} left, reorder at ${inv.reorderPoint})`
+          })
+        }
+      }
+    })
+
+    // Sort by severity
+    const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
+    alerts.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
+
+    response.json({
+      alerts,
+      count: alerts.length,
+      summary: {
+        critical: alerts.filter(a => a.severity === 'critical').length,
+        high: alerts.filter(a => a.severity === 'high').length,
+        medium: alerts.filter(a => a.severity === 'medium').length
+      }
+    })
+  } catch (error) {
+    response.status(500).json({ error: error.message })
+  }
+})
+
+// ============================================
+// POST ENDPOINTS - Stock Operations
+// ============================================
+
+// POST /api/inventory/adjust - Manual stock adjustment
+inventoryRouter.post('/adjust', userExtractor, async (request, response) => {
+  try {
+    const { product, type, quantity, reason, notes, referenceType, referenceId } = request.body
+
+    if (!product) {
       return response.status(400).json({ error: 'Product ID is required' })
     }
 
-    // Check if product exists
-    const product = await Product.findById(productId)
-    if (!product) {
-      return response.status(404).json({ error: 'Product not found' })
+    if (!quantity || quantity === 0) {
+      return response.status(400).json({ error: 'Quantity must be non-zero' })
     }
 
-    // Check if inventory already exists
-    const existingInventory = await Inventory.findOne({ product: productId })
-    if (existingInventory) {
-      return response.status(400).json({
-        error: 'Inventory already exists for this product'
+    if (!reason) {
+      return response.status(400).json({ error: 'Reason is required for adjustment' })
+    }
+
+    // Find or create inventory
+    let inventory = await Inventory.findOne({ product }).populate('product')
+
+    if (!inventory) {
+      const productDoc = await Product.findById(product)
+      if (!productDoc) {
+        return response.status(404).json({ error: 'Product not found' })
+      }
+
+      inventory = new Inventory({
+        product,
+        quantityOnHand: 0,
+        reorderPoint: 10,
+        reorderQuantity: 50
       })
     }
 
-    const inventory = new Inventory({
-      product: productId,
-      quantityOnHand: quantityOnHand || 0,
-      reorderPoint: reorderPoint || 10,
-      reorderQuantity: reorderQuantity || 50,
-      warehouseLocation
+    const newQuantity = Math.max(0, inventory.quantityOnHand + quantity)
+
+    inventory.movements.push({
+      type: type || (quantity > 0 ? 'in' : 'adjustment'),
+      quantity: Math.abs(quantity),
+      reason,
+      notes,
+      referenceType: referenceType || 'adjustment',
+      referenceId,
+      performedBy: request.user.id,
+      date: new Date()
     })
 
-    // Add initial movement if quantity > 0
-    if (quantityOnHand > 0) {
-      inventory.movements.push({
-        type: 'in',
-        quantity: quantityOnHand,
-        reason: 'Initial stock',
-        referenceType: 'adjustment',
-        performedBy: request.user.id
-      })
+    inventory.quantityOnHand = newQuantity
+
+    if (quantity > 0) {
       inventory.lastRestocked = new Date()
     }
 
-    const savedInventory = await inventory.save()
+    await inventory.save()
 
     // Update product stock
-    product.stock = quantityOnHand || 0
-    await product.save()
+    const productDoc = await Product.findById(product)
+    if (productDoc) {
+      productDoc.stock = newQuantity
+      await productDoc.save()
+    }
 
-    await savedInventory.populate('product', 'name sku price')
+    await inventory.populate('product', 'name sku price')
 
-    response.status(201).json(savedInventory)
+    response.json({
+      message: 'Stock adjusted successfully',
+      inventory,
+      change: quantity,
+      newQuantity: inventory.quantityOnHand
+    })
   } catch (error) {
     response.status(400).json({ error: error.message })
   }
 })
 
-// PUT /api/inventory/:id/adjust - Adjust stock quantity
-inventoryRouter.put('/:id/adjust', userExtractor, async (request, response) => {
+// POST /api/inventory/reserve - Reserve stock for order
+inventoryRouter.post('/reserve', userExtractor, async (request, response) => {
   try {
-    const { newQuantity, reason } = request.body
+    const { product, quantity, referenceType, referenceId, reason } = request.body
 
-    if (newQuantity === undefined || newQuantity < 0) {
+    if (!product || !quantity || quantity <= 0) {
+      return response.status(400).json({ error: 'Product and positive quantity are required' })
+    }
+
+    let inventory = await Inventory.findOne({ product }).populate('product')
+    if (!inventory) {
+      return response.status(404).json({ error: 'Inventory not found for this product' })
+    }
+
+    if (inventory.quantityAvailable < quantity) {
       return response.status(400).json({
-        error: 'New quantity is required and must be non-negative'
+        error: 'Insufficient stock available',
+        available: inventory.quantityAvailable
       })
     }
 
-    if (!reason) {
-      return response.status(400).json({ error: 'Reason is required' })
+    inventory.quantityReserved += quantity
+    inventory.movements.push({
+      type: 'reserved',
+      quantity,
+      reason: reason || 'Stock reserved',
+      referenceType: referenceType || 'order',
+      referenceId,
+      performedBy: request.user.id,
+      date: new Date()
+    })
+
+    await inventory.save()
+
+    response.json({
+      message: 'Stock reserved successfully',
+      inventory,
+      quantityReserved: inventory.quantityReserved,
+      quantityAvailable: inventory.quantityAvailable
+    })
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/inventory/release - Release reserved stock
+inventoryRouter.post('/release', userExtractor, async (request, response) => {
+  try {
+    const { product, quantity, referenceType, referenceId, reason } = request.body
+
+    if (!product || !quantity || quantity <= 0) {
+      return response.status(400).json({ error: 'Product and positive quantity are required' })
     }
 
-    const inventory = await Inventory
-      .findById(request.params.id)
+    let inventory = await Inventory.findOne({ product }).populate('product')
+    if (!inventory) {
+      return response.status(404).json({ error: 'Inventory not found for this product' })
+    }
+
+    if (inventory.quantityReserved < quantity) {
+      return response.status(400).json({
+        error: 'Cannot release more than reserved',
+        reserved: inventory.quantityReserved
+      })
+    }
+
+    inventory.quantityReserved -= quantity
+    inventory.movements.push({
+      type: 'released',
+      quantity,
+      reason: reason || 'Stock released',
+      referenceType: referenceType || 'order',
+      referenceId,
+      performedBy: request.user.id,
+      date: new Date()
+    })
+
+    await inventory.save()
+
+    response.json({
+      message: 'Stock released successfully',
+      inventory,
+      quantityReserved: inventory.quantityReserved,
+      quantityAvailable: inventory.quantityAvailable
+    })
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/inventory/stock-in - Stock in from purchase order
+inventoryRouter.post('/stock-in', userExtractor, async (request, response) => {
+  try {
+    const { product, quantity, referenceType, referenceId, reason, warehouseLocation, notes } = request.body
+
+    if (!product || !quantity || quantity <= 0) {
+      return response.status(400).json({ error: 'Product and positive quantity are required' })
+    }
+
+    let inventory = await Inventory.findOne({ product }).populate('product')
+
+    if (!inventory) {
+      const productDoc = await Product.findById(product)
+      if (!productDoc) {
+        return response.status(404).json({ error: 'Product not found' })
+      }
+
+      inventory = new Inventory({
+        product,
+        quantityOnHand: 0,
+        reorderPoint: 10,
+        reorderQuantity: 50
+      })
+    }
+
+    inventory.quantityOnHand += quantity
+    inventory.lastRestocked = new Date()
+
+    if (warehouseLocation) {
+      inventory.warehouseLocation = warehouseLocation
+    }
+
+    inventory.movements.push({
+      type: 'in',
+      quantity,
+      reason: reason || 'Stock received',
+      notes,
+      referenceType: referenceType || 'purchase_order',
+      referenceId,
+      performedBy: request.user.id,
+      date: new Date()
+    })
+
+    await inventory.save()
+
+    // Update product stock
+    const productDoc = await Product.findById(product)
+    if (productDoc) {
+      productDoc.stock = inventory.quantityOnHand
+      await productDoc.save()
+    }
+
+    await inventory.populate('product', 'name sku price')
+
+    response.json({
+      message: 'Stock added successfully',
+      inventory,
+      quantityAdded: quantity,
+      newQuantity: inventory.quantityOnHand
+    })
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/inventory/stock-in/bulk - Bulk stock in
+inventoryRouter.post('/stock-in/bulk', userExtractor, async (request, response) => {
+  try {
+    const { referenceType, referenceId, items, notes } = request.body
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return response.status(400).json({ error: 'Items array is required' })
+    }
+
+    const results = []
+
+    for (const item of items) {
+      try {
+        const { product, quantity, warehouseLocation } = item
+
+        if (!product || !quantity || quantity <= 0) {
+          results.push({
+            product,
+            success: false,
+            error: 'Invalid product or quantity'
+          })
+          continue
+        }
+
+        let inventory = await Inventory.findOne({ product }).populate('product')
+
+        if (!inventory) {
+          const productDoc = await Product.findById(product)
+          if (!productDoc) {
+            results.push({
+              product,
+              success: false,
+              error: 'Product not found'
+            })
+            continue
+          }
+
+          inventory = new Inventory({
+            product,
+            quantityOnHand: 0,
+            reorderPoint: 10,
+            reorderQuantity: 50
+          })
+        }
+
+        inventory.quantityOnHand += quantity
+        inventory.lastRestocked = new Date()
+
+        if (warehouseLocation) {
+          inventory.warehouseLocation = warehouseLocation
+        }
+
+        inventory.movements.push({
+          type: 'in',
+          quantity,
+          reason: 'Bulk stock in',
+          notes,
+          referenceType: referenceType || 'purchase_order',
+          referenceId,
+          performedBy: request.user.id,
+          date: new Date()
+        })
+
+        await inventory.save()
+
+        // Update product stock
+        const productDoc = await Product.findById(product)
+        if (productDoc) {
+          productDoc.stock = inventory.quantityOnHand
+          await productDoc.save()
+        }
+
+        results.push({
+          product: inventory.product.name,
+          success: true,
+          quantityAdded: quantity,
+          newQuantity: inventory.quantityOnHand
+        })
+      } catch (error) {
+        results.push({
+          product: item.product,
+          success: false,
+          error: error.message
+        })
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length
+    const failCount = results.filter(r => !r.success).length
+
+    response.json({
+      message: `Bulk stock in completed. ${successCount} success, ${failCount} failed`,
+      results,
+      summary: {
+        total: items.length,
+        success: successCount,
+        failed: failCount
+      }
+    })
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/inventory/stock-out - Stock out for order shipment
+inventoryRouter.post('/stock-out', userExtractor, async (request, response) => {
+  try {
+    const { product, quantity, referenceType, referenceId, reason, notes } = request.body
+
+    if (!product || !quantity || quantity <= 0) {
+      return response.status(400).json({ error: 'Product and positive quantity are required' })
+    }
+
+    let inventory = await Inventory.findOne({ product }).populate('product')
+    if (!inventory) {
+      return response.status(404).json({ error: 'Inventory not found for this product' })
+    }
+
+    if (inventory.quantityOnHand < quantity) {
+      return response.status(400).json({
+        error: 'Insufficient stock on hand',
+        available: inventory.quantityOnHand
+      })
+    }
+
+    inventory.quantityOnHand -= quantity
+
+    // Also release reserved stock if applicable
+    if (inventory.quantityReserved >= quantity) {
+      inventory.quantityReserved -= quantity
+    }
+
+    inventory.movements.push({
+      type: 'out',
+      quantity,
+      reason: reason || 'Stock shipped',
+      notes,
+      referenceType: referenceType || 'order',
+      referenceId,
+      performedBy: request.user.id,
+      date: new Date()
+    })
+
+    await inventory.save()
+
+    // Update product stock
+    const productDoc = await Product.findById(product)
+    if (productDoc) {
+      productDoc.stock = inventory.quantityOnHand
+      await productDoc.save()
+    }
+
+    await inventory.populate('product', 'name sku price')
+
+    response.json({
+      message: 'Stock removed successfully',
+      inventory,
+      quantityRemoved: quantity,
+      newQuantity: inventory.quantityOnHand
+    })
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
+// ============================================
+// PUT ENDPOINTS - Update Settings
+// ============================================
+
+// PUT /api/inventory/:productId/reorder-settings - Update reorder settings
+inventoryRouter.put('/:productId/reorder-settings', userExtractor, async (request, response) => {
+  try {
+    const { reorderPoint, reorderQuantity } = request.body
+
+    let inventory = await Inventory
+      .findOne({ product: request.params.productId })
       .populate('product')
 
     if (!inventory) {
       return response.status(404).json({ error: 'Inventory not found' })
     }
 
-    await inventory.adjustStock(newQuantity, reason, request.user.id)
-
-    // Update product stock
-    if (inventory.product) {
-      inventory.product.stock = inventory.quantityOnHand
-      await inventory.product.save()
+    if (reorderPoint !== undefined) {
+      inventory.reorderPoint = reorderPoint
     }
 
-    response.json({
-      message: 'Stock adjusted successfully',
-      inventory
-    })
-  } catch (error) {
-    response.status(400).json({ error: error.message })
-  }
-})
-
-// PUT /api/inventory/:id/reserve - Reserve stock
-inventoryRouter.put('/:id/reserve', userExtractor, async (request, response) => {
-  try {
-    const { quantity, referenceId } = request.body
-
-    if (!quantity || quantity <= 0) {
-      return response.status(400).json({
-        error: 'Quantity must be a positive number'
-      })
+    if (reorderQuantity !== undefined) {
+      inventory.reorderQuantity = reorderQuantity
     }
-
-    const inventory = await Inventory.findById(request.params.id)
-
-    if (!inventory) {
-      return response.status(404).json({ error: 'Inventory not found' })
-    }
-
-    await inventory.reserveStock(quantity, referenceId, request.user.id)
-
-    response.json({
-      message: 'Stock reserved successfully',
-      quantityReserved: inventory.quantityReserved,
-      quantityAvailable: inventory.quantityAvailable
-    })
-  } catch (error) {
-    response.status(400).json({ error: error.message })
-  }
-})
-
-// PUT /api/inventory/:id/release - Release reserved stock
-inventoryRouter.put('/:id/release', userExtractor, async (request, response) => {
-  try {
-    const { quantity, referenceId } = request.body
-
-    if (!quantity || quantity <= 0) {
-      return response.status(400).json({
-        error: 'Quantity must be a positive number'
-      })
-    }
-
-    const inventory = await Inventory.findById(request.params.id)
-
-    if (!inventory) {
-      return response.status(404).json({ error: 'Inventory not found' })
-    }
-
-    await inventory.releaseStock(quantity, referenceId, request.user.id)
-
-    response.json({
-      message: 'Stock released successfully',
-      quantityReserved: inventory.quantityReserved,
-      quantityAvailable: inventory.quantityAvailable
-    })
-  } catch (error) {
-    response.status(400).json({ error: error.message })
-  }
-})
-
-// PUT /api/inventory/:id/settings - Update inventory settings
-inventoryRouter.put('/:id/settings', userExtractor, async (request, response) => {
-  try {
-    const { reorderPoint, reorderQuantity, warehouseLocation } = request.body
-
-    const inventory = await Inventory.findById(request.params.id)
-
-    if (!inventory) {
-      return response.status(404).json({ error: 'Inventory not found' })
-    }
-
-    if (reorderPoint !== undefined) inventory.reorderPoint = reorderPoint
-    if (reorderQuantity !== undefined) inventory.reorderQuantity = reorderQuantity
-    if (warehouseLocation !== undefined) inventory.warehouseLocation = warehouseLocation
 
     await inventory.save()
 
     response.json({
-      message: 'Inventory settings updated successfully',
+      message: 'Reorder settings updated successfully',
       inventory
     })
   } catch (error) {
@@ -359,26 +776,49 @@ inventoryRouter.put('/:id/settings', userExtractor, async (request, response) =>
   }
 })
 
-// DELETE /api/inventory/:id - Delete inventory
-inventoryRouter.delete('/:id', userExtractor, async (request, response) => {
+// PUT /api/inventory/:productId/location - Update warehouse location
+inventoryRouter.put('/:productId/location', userExtractor, async (request, response) => {
   try {
-    const inventory = await Inventory.findById(request.params.id)
+    const { warehouseLocation } = request.body
+
+    if (!warehouseLocation) {
+      return response.status(400).json({ error: 'Warehouse location is required' })
+    }
+
+    let inventory = await Inventory
+      .findOne({ product: request.params.productId })
+      .populate('product')
 
     if (!inventory) {
       return response.status(404).json({ error: 'Inventory not found' })
     }
 
-    // Only allow deletion if no stock
-    if (inventory.quantityOnHand > 0 || inventory.quantityReserved > 0) {
-      return response.status(400).json({
-        error: 'Cannot delete inventory with existing stock'
-      })
-    }
+    inventory.warehouseLocation = warehouseLocation
+    await inventory.save()
 
-    await Inventory.findByIdAndDelete(request.params.id)
-    response.json({ message: 'Inventory deleted successfully' })
+    response.json({
+      message: 'Warehouse location updated successfully',
+      inventory
+    })
   } catch (error) {
-    response.status(500).json({ error: error.message })
+    response.status(400).json({ error: error.message })
+  }
+})
+
+// ============================================
+// PATCH ENDPOINTS - Alerts
+// ============================================
+
+// PATCH /api/inventory/alerts/:alertId/acknowledge - Acknowledge alert
+inventoryRouter.patch('/alerts/:alertId/acknowledge', userExtractor, async (request, response) => {
+  try {
+    // For now, just return success (alerts are generated on-the-fly)
+    response.json({
+      message: 'Alert acknowledged',
+      alertId: request.params.alertId
+    })
+  } catch (error) {
+    response.status(400).json({ error: error.message })
   }
 })
 

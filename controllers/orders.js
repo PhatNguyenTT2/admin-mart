@@ -179,11 +179,11 @@ ordersRouter.post('/', async (request, response) => {
     const orderItems = []
 
     for (const item of items) {
-      const product = await Product.findById(item.productId)
+      const product = await Product.findById(item.product)
 
       if (!product) {
         return response.status(400).json({
-          error: `Product not found: ${item.productId}`
+          error: `Product not found: ${item.product}`
         })
       }
 

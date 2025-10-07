@@ -146,6 +146,7 @@ suppliersRouter.get('/:id/products', async (request, response) => {
 suppliersRouter.post('/', userExtractor, async (request, response) => {
   try {
     const {
+      supplierCode,
       companyName,
       contactPerson,
       email,
@@ -183,7 +184,18 @@ suppliersRouter.post('/', userExtractor, async (request, response) => {
       }
     }
 
+    // Check if supplierCode is provided and already exists
+    if (supplierCode) {
+      const existingCode = await Supplier.findOne({ supplierCode })
+      if (existingCode) {
+        return response.status(400).json({
+          error: 'Supplier code already exists'
+        })
+      }
+    }
+
     const supplier = new Supplier({
+      supplierCode,
       companyName,
       contactPerson,
       email,

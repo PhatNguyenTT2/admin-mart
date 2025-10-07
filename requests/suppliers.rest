@@ -59,6 +59,7 @@ Content-Type: application/json
   "notes": "Nhà cung cấp chính cho thực phẩm tươi sống và chế biến"
 }
 
+### Extract Supplier 1 ID
 @supplier1Id = {{supplier1.response.body.data.supplier._id}}
 
 ### 2. Create Supplier - Beverage Distributor
@@ -101,6 +102,7 @@ Content-Type: application/json
   "notes": "Phân phối các loại nước giải khát, bia, rượu"
 }
 
+### Extract Supplier 2 ID
 @supplier2Id = {{supplier2.response.body.data.supplier._id}}
 
 ### 3. Create Supplier - Household Products Wholesaler

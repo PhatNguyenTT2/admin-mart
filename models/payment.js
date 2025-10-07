@@ -4,7 +4,6 @@ const paymentSchema = new mongoose.Schema({
   paymentNumber: {
     type: String,
     unique: true,
-    required: true,
     // Auto-generate: PAY2025000001
   },
 

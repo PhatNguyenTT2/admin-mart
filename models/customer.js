@@ -4,7 +4,6 @@ const customerSchema = new mongoose.Schema({
   customerCode: {
     type: String,
     unique: true,
-    required: true,
     // Auto-generate: CUST2025000001
   },
 

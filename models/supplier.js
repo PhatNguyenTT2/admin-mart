@@ -4,8 +4,7 @@ const supplierSchema = new mongoose.Schema({
   supplierCode: {
     type: String,
     unique: true,
-    required: true,
-    // Auto-generate: SUP2025000001
+    // Auto-generate: SUP2025000001 (if not provided)
   },
 
   companyName: {
