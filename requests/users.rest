@@ -25,8 +25,8 @@ POST {{baseUrl}}/login/register
 Content-Type: application/json
 
 {
-  "username": "admin2",
-  "email": "admin2@example.com",
+  "username": "admin",
+  "email": "admin@example.com",
   "fullName": "Admin User",
   "password": "admin123"
 }

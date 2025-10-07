@@ -1,0 +1,518 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
+
+### ============================================
+### AUTHENTICATION (Run this first!)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token
+@token = {{loginResponse.response.body.data.token}}
+@userId = {{loginResponse.response.body.data.user.id}}
+
+### ============================================
+### REFERENCE IDs (Update these from other requests)
+### ============================================
+@orderId1 = 67e3775b81ace97f65644540  # From orders.rest
+@customerId1 = 67e3775b81ace97f65644550  # From customers.rest
+@supplierId1 = 67e3775b81ace97f65644560  # From suppliers.rest
+@poId1 = 67e3775b81ace97f65644570  # From purchaseOrders.rest
+
+### ============================================
+### CREATE PAYMENTS - SALES (Customer Payments)
+### ============================================
+### NOTE: These endpoints require controller implementation
+### Status: 🟡 Model Ready, Controller Pending
+
+### 1. Record Payment - Cash Payment for Order
+# @name payment1
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "relatedOrderId": "{{orderId1}}",
+  "amount": 110000,
+  "paymentMethod": "cash",
+  "customer": "{{customerId1}}",
+  "notes": "Cash payment received at store"
+}
+
+@payment1Id = {{payment1.response.body.data.payment._id}}
+
+### 2. Record Payment - Card Payment
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "relatedOrderId": "{{orderId1}}",
+  "amount": 250000,
+  "paymentMethod": "card",
+  "transactionId": "TXN1234567890",
+  "cardLastFourDigits": "1234",
+  "customer": "{{customerId1}}",
+  "notes": "Visa card payment"
+}
+
+### 3. Record Payment - Bank Transfer
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "relatedOrderId": "{{orderId1}}",
+  "amount": 500000,
+  "paymentMethod": "bank_transfer",
+  "transactionId": "BT20250107001",
+  "bankReference": "REF789012345",
+  "customer": "{{customerId1}}",
+  "notes": "Bank transfer via Vietcombank"
+}
+
+### 4. Record Payment - E-wallet (Momo/ZaloPay)
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "relatedOrderId": "{{orderId1}}",
+  "amount": 150000,
+  "paymentMethod": "e_wallet",
+  "transactionId": "MOMO1234567890",
+  "customer": "{{customerId1}}",
+  "notes": "Momo wallet payment"
+}
+
+### 5. Record Partial Payment
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "relatedOrderId": "{{orderId1}}",
+  "amount": 100000,
+  "paymentMethod": "cash",
+  "customer": "{{customerId1}}",
+  "notes": "Partial payment - 1st installment"
+}
+
+### 6. Record Final Payment (Remaining Balance)
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "relatedOrderId": "{{orderId1}}",
+  "amount": 150000,
+  "paymentMethod": "cash",
+  "customer": "{{customerId1}}",
+  "notes": "Final payment - order fully paid"
+}
+
+### ============================================
+### CREATE PAYMENTS - PURCHASE (Supplier Payments)
+### ============================================
+
+### 7. Record Payment to Supplier - Check Payment
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "purchase",
+  "relatedOrderId": "{{poId1}}",
+  "amount": 5000000,
+  "paymentMethod": "check",
+  "transactionId": "CHK001234",
+  "supplier": "{{supplierId1}}",
+  "notes": "Check #001234 issued to supplier"
+}
+
+### 8. Record Payment to Supplier - Bank Transfer
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "purchase",
+  "relatedOrderId": "{{poId1}}",
+  "amount": 10000000,
+  "paymentMethod": "bank_transfer",
+  "transactionId": "BT20250107002",
+  "bankReference": "SUPREF123456",
+  "supplier": "{{supplierId1}}",
+  "notes": "Payment for PO #PO2025000001"
+}
+
+### 9. Record Payment to Supplier - Credit Payment
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "purchase",
+  "relatedOrderId": "{{poId1}}",
+  "amount": 3000000,
+  "paymentMethod": "credit",
+  "supplier": "{{supplierId1}}",
+  "notes": "Credit account payment - Net 30 terms"
+}
+
+### ============================================
+### READ PAYMENTS
+### ============================================
+
+### Get all payments
+GET {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+
+### Get payments with pagination
+GET {{baseUrl}}/payments?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Filter payments by type - Sales
+GET {{baseUrl}}/payments?type=sales
+Authorization: Bearer {{token}}
+
+### Filter payments by type - Purchase
+GET {{baseUrl}}/payments?type=purchase
+Authorization: Bearer {{token}}
+
+### Filter payments by method - Cash
+GET {{baseUrl}}/payments?method=cash
+Authorization: Bearer {{token}}
+
+### Filter payments by method - Card
+GET {{baseUrl}}/payments?method=card
+Authorization: Bearer {{token}}
+
+### Filter payments by method - Bank Transfer
+GET {{baseUrl}}/payments?method=bank_transfer
+Authorization: Bearer {{token}}
+
+### Filter payments by status - Completed
+GET {{baseUrl}}/payments?status=completed
+Authorization: Bearer {{token}}
+
+### Filter payments by status - Pending
+GET {{baseUrl}}/payments?status=pending
+Authorization: Bearer {{token}}
+
+### Filter payments by status - Refunded
+GET {{baseUrl}}/payments?status=refunded
+Authorization: Bearer {{token}}
+
+### Filter payments by date range
+GET {{baseUrl}}/payments?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Get payments by amount range
+GET {{baseUrl}}/payments?minAmount=100000&maxAmount=500000
+Authorization: Bearer {{token}}
+
+### Get payment by ID
+GET {{baseUrl}}/payments/{{payment1Id}}
+Authorization: Bearer {{token}}
+
+### Get payment by payment number
+GET {{baseUrl}}/payments/search?paymentNumber=PAY2025000001
+Authorization: Bearer {{token}}
+
+### ============================================
+### GET PAYMENTS BY ORDER/PO
+### ============================================
+
+### Get all payments for an order
+GET {{baseUrl}}/payments/order/{{orderId1}}
+Authorization: Bearer {{token}}
+
+### Get all payments for a purchase order
+GET {{baseUrl}}/payments/purchase-order/{{poId1}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### GET PAYMENTS BY CUSTOMER/SUPPLIER
+### ============================================
+
+### Get customer payment history
+GET {{baseUrl}}/payments/customer/{{customerId1}}
+Authorization: Bearer {{token}}
+
+### Get customer payments with pagination
+GET {{baseUrl}}/payments/customer/{{customerId1}}?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Get supplier payment history
+GET {{baseUrl}}/payments/supplier/{{supplierId1}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### REFUND PROCESSING
+### ============================================
+
+### Process full refund
+POST {{baseUrl}}/payments/{{payment1Id}}/refund
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "refundAmount": 110000,
+  "refundReason": "Product defect - customer returned items",
+  "notes": "Full refund processed, items returned to inventory"
+}
+
+### Process partial refund
+POST {{baseUrl}}/payments/{{payment1Id}}/refund
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "refundAmount": 50000,
+  "refundReason": "Damaged item in order",
+  "notes": "Partial refund for 1 damaged item, rest of order kept"
+}
+
+### Process refund - Service issue
+POST {{baseUrl}}/payments/{{payment1Id}}/refund
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "refundAmount": 110000,
+  "refundReason": "Late delivery compensation",
+  "notes": "Customer complaint resolved with full refund"
+}
+
+### Get refund details
+GET {{baseUrl}}/payments/{{payment1Id}}/refunds
+Authorization: Bearer {{token}}
+
+### ============================================
+### UPDATE PAYMENT STATUS
+### ============================================
+
+### Update payment status to completed
+PATCH {{baseUrl}}/payments/{{payment1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "completed",
+  "notes": "Payment verified and processed"
+}
+
+### Update payment status to pending
+PATCH {{baseUrl}}/payments/{{payment1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "pending",
+  "notes": "Awaiting bank confirmation"
+}
+
+### Update payment status to failed
+PATCH {{baseUrl}}/payments/{{payment1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "failed",
+  "notes": "Payment declined by bank"
+}
+
+### Update payment status to cancelled
+PATCH {{baseUrl}}/payments/{{payment1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "cancelled",
+  "notes": "Payment cancelled by customer"
+}
+
+### ============================================
+### PAYMENT STATISTICS
+### ============================================
+
+### Get payment statistics summary
+GET {{baseUrl}}/payments/stats/summary
+Authorization: Bearer {{token}}
+
+### Get revenue by payment method
+GET {{baseUrl}}/payments/stats/by-method
+Authorization: Bearer {{token}}
+
+### Get daily revenue
+GET {{baseUrl}}/payments/stats/revenue?period=day&date=2025-01-07
+Authorization: Bearer {{token}}
+
+### Get weekly revenue
+GET {{baseUrl}}/payments/stats/revenue?period=week
+Authorization: Bearer {{token}}
+
+### Get monthly revenue
+GET {{baseUrl}}/payments/stats/revenue?period=month&month=1&year=2025
+Authorization: Bearer {{token}}
+
+### Get yearly revenue
+GET {{baseUrl}}/payments/stats/revenue?period=year&year=2025
+Authorization: Bearer {{token}}
+
+### Get pending payments (unpaid orders)
+GET {{baseUrl}}/payments/stats/pending
+Authorization: Bearer {{token}}
+
+### Get refunded payments summary
+GET {{baseUrl}}/payments/stats/refunds?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Get top paying customers
+GET {{baseUrl}}/payments/stats/top-customers?limit=10
+Authorization: Bearer {{token}}
+
+### ============================================
+### PAYMENT RECONCILIATION
+### ============================================
+
+### Reconcile payments for a date
+POST {{baseUrl}}/payments/reconciliation
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "date": "2025-01-07",
+  "notes": "Daily payment reconciliation"
+}
+
+### Get reconciliation report
+GET {{baseUrl}}/payments/reconciliation?date=2025-01-07
+Authorization: Bearer {{token}}
+
+### ============================================
+### PAYMENT REPORTS
+### ============================================
+
+### Export payments to CSV
+GET {{baseUrl}}/payments/export?format=csv&startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### Export payments to Excel
+GET {{baseUrl}}/payments/export?format=excel&startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### Export payments to PDF
+GET {{baseUrl}}/payments/export?format=pdf&startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### ============================================
+### TESTING & VALIDATION
+### ============================================
+
+### Test - Create payment without auth (should fail 401)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "amount": 100000
+}
+
+### Test - Create payment with invalid order ID (should fail 404)
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "relatedOrderId": "000000000000000000000000",
+  "amount": 100000,
+  "paymentMethod": "cash"
+}
+
+### Test - Create payment with negative amount (should fail 400)
+POST {{baseUrl}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentType": "sales",
+  "relatedOrderId": "{{orderId1}}",
+  "amount": -100000,
+  "paymentMethod": "cash"
+}
+
+### Test - Refund more than paid amount (should fail 400)
+POST {{baseUrl}}/payments/{{payment1Id}}/refund
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "refundAmount": 999999999,
+  "refundReason": "Test"
+}
+
+### ============================================
+### NOTES
+### ============================================
+
+# Payment Types:
+# - sales: Payment from customer for order
+# - purchase: Payment to supplier for purchase order
+#
+# Payment Methods:
+# - cash: Cash payment
+# - card: Credit/Debit card
+# - bank_transfer: Bank transfer
+# - e_wallet: E-wallet (Momo, ZaloPay, etc.)
+# - check: Check payment
+# - credit: Credit/Account payment (for wholesale)
+#
+# Payment Status:
+# - pending: Awaiting confirmation
+# - completed: Successfully processed
+# - failed: Transaction failed
+# - refunded: Payment refunded
+# - cancelled: Payment cancelled
+#
+# Auto-Generated Fields:
+# - paymentNumber: PAY2025000001 (auto-incremented)
+# - paymentDate: Current timestamp
+# - receivedBy: Current logged-in user
+#
+# Business Logic:
+# 1. Record payment → Update order paymentStatus
+# 2. Full payment → Order paymentStatus = 'paid'
+# 3. Partial payment → Order paymentStatus = 'partial'
+# 4. Refund → Create new payment with negative amount
+# 5. Refund → Update order paymentStatus = 'refunded'
+#
+# Integration:
+# - Sales payments linked to Order model
+# - Purchase payments linked to PurchaseOrder model
+# - Customer/Supplier payment history tracked
+# - Statistics updated automatically
+#
+# Reports:
+# - Revenue by period (day/week/month/year)
+# - Revenue by payment method
+# - Pending payments (unpaid orders)
+# - Refund summary
+# - Top customers by payment amount

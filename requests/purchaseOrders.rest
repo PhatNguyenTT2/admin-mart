@@ -1,0 +1,581 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
+
+### ============================================
+### AUTHENTICATION (Run this first!)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token
+@token = {{loginResponse.response.body.data.token}}
+@userId = {{loginResponse.response.body.data.user.id}}
+
+### ============================================
+### REFERENCE IDs (Update these from other requests)
+### ============================================
+@supplierId1 = 67e3775b81ace97f65644560  # From suppliers.rest
+@productId1 = 67e1a93da89f2e0013b39b5d  # From create_all_products.rest
+@productId2 = 67e1a93da89f2e0013b39b5e  # From create_all_products.rest
+@productId3 = 67e1a93da89f2e0013b39b5f  # From create_all_products.rest
+
+### ============================================
+### CREATE PURCHASE ORDERS
+### ============================================
+### NOTE: These endpoints require controller implementation
+### Status: 🟡 Model Ready, Controller Pending
+
+### 1. Create Purchase Order - Draft (Single Product)
+# @name po1
+POST {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplier": "{{supplierId1}}",
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 100,
+      "unitPrice": 80000,
+      "totalPrice": 8000000
+    }
+  ],
+  "subtotal": 8000000,
+  "taxAmount": 800000,
+  "totalAmount": 8800000,
+  "notes": "Regular restock order - Draft",
+  "expectedDeliveryDate": "2025-01-15"
+}
+
+@po1Id = {{po1.response.body.data.purchaseOrder._id}}
+@po1Number = {{po1.response.body.data.purchaseOrder.poNumber}}
+
+### 2. Create Purchase Order - Multiple Products
+# @name po2
+POST {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplier": "{{supplierId1}}",
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 200,
+      "unitPrice": 80000,
+      "totalPrice": 16000000
+    },
+    {
+      "product": "{{productId2}}",
+      "quantity": 150,
+      "unitPrice": 120000,
+      "totalPrice": 18000000
+    },
+    {
+      "product": "{{productId3}}",
+      "quantity": 100,
+      "unitPrice": 200000,
+      "totalPrice": 20000000
+    }
+  ],
+  "subtotal": 54000000,
+  "taxAmount": 5400000,
+  "shippingCost": 500000,
+  "totalAmount": 59900000,
+  "notes": "Bulk order for new product launch",
+  "expectedDeliveryDate": "2025-01-20"
+}
+
+@po2Id = {{po2.response.body.data.purchaseOrder._id}}
+
+### 3. Create PO with Discount
+POST {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplier": "{{supplierId1}}",
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 500,
+      "unitPrice": 75000,
+      "totalPrice": 37500000
+    }
+  ],
+  "subtotal": 37500000,
+  "taxAmount": 3750000,
+  "discountAmount": 2000000,
+  "totalAmount": 39250000,
+  "notes": "Volume discount applied - 500 units",
+  "expectedDeliveryDate": "2025-01-25"
+}
+
+### 4. Create PO - Urgent Order
+POST {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplier": "{{supplierId1}}",
+  "items": [
+    {
+      "product": "{{productId2}}",
+      "quantity": 50,
+      "unitPrice": 120000,
+      "totalPrice": 6000000
+    }
+  ],
+  "subtotal": 6000000,
+  "taxAmount": 600000,
+  "shippingCost": 300000,
+  "totalAmount": 6900000,
+  "notes": "URGENT - Out of stock item, express delivery",
+  "expectedDeliveryDate": "2025-01-10",
+  "priority": "high"
+}
+
+### ============================================
+### READ PURCHASE ORDERS
+### ============================================
+
+### Get all purchase orders
+GET {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+
+### Get POs with pagination
+GET {{baseUrl}}/purchase-orders?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Filter POs by status - Draft
+GET {{baseUrl}}/purchase-orders?status=draft
+Authorization: Bearer {{token}}
+
+### Filter POs by status - Pending
+GET {{baseUrl}}/purchase-orders?status=pending
+Authorization: Bearer {{token}}
+
+### Filter POs by status - Approved
+GET {{baseUrl}}/purchase-orders?status=approved
+Authorization: Bearer {{token}}
+
+### Filter POs by status - Received
+GET {{baseUrl}}/purchase-orders?status=received
+Authorization: Bearer {{token}}
+
+### Filter POs by status - Cancelled
+GET {{baseUrl}}/purchase-orders?status=cancelled
+Authorization: Bearer {{token}}
+
+### Filter POs by supplier
+GET {{baseUrl}}/purchase-orders?supplier={{supplierId1}}
+Authorization: Bearer {{token}}
+
+### Filter POs by date range
+GET {{baseUrl}}/purchase-orders?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Filter POs by amount range
+GET {{baseUrl}}/purchase-orders?minAmount=5000000&maxAmount=50000000
+Authorization: Bearer {{token}}
+
+### Get PO by ID
+GET {{baseUrl}}/purchase-orders/{{po1Id}}
+Authorization: Bearer {{token}}
+
+### Search PO by PO number
+GET {{baseUrl}}/purchase-orders/search?poNumber={{po1Number}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### UPDATE PURCHASE ORDER STATUS
+### ============================================
+
+### Submit PO for approval (Draft → Pending)
+PATCH {{baseUrl}}/purchase-orders/{{po1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "pending",
+  "notes": "Submitted for manager approval"
+}
+
+### Approve PO (Pending → Approved)
+PATCH {{baseUrl}}/purchase-orders/{{po1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "approved",
+  "approvedBy": "{{userId}}",
+  "approvalDate": "2025-01-07",
+  "notes": "Approved by purchasing manager"
+}
+
+### Reject PO (Pending → Cancelled)
+PATCH {{baseUrl}}/purchase-orders/{{po1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "cancelled",
+  "cancellationReason": "Supplier price too high",
+  "notes": "Need to find alternative supplier"
+}
+
+### ============================================
+### RECEIVE GOODS (Goods Receipt)
+### ============================================
+
+### Receive full order
+POST {{baseUrl}}/purchase-orders/{{po1Id}}/receive
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "receivedItems": [
+    {
+      "product": "{{productId1}}",
+      "quantityReceived": 100,
+      "condition": "good",
+      "notes": "All items received in good condition"
+    }
+  ],
+  "receivedDate": "2025-01-15",
+  "receivedBy": "{{userId}}",
+  "notes": "Full order received, quality checked"
+}
+
+### Receive partial order
+POST {{baseUrl}}/purchase-orders/{{po2Id}}/receive
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "receivedItems": [
+    {
+      "product": "{{productId1}}",
+      "quantityReceived": 200,
+      "condition": "good"
+    },
+    {
+      "product": "{{productId2}}",
+      "quantityReceived": 100,
+      "condition": "good",
+      "notes": "50 units backordered"
+    },
+    {
+      "product": "{{productId3}}",
+      "quantityReceived": 0,
+      "condition": "pending",
+      "notes": "Out of stock from supplier, delayed"
+    }
+  ],
+  "receivedDate": "2025-01-20",
+  "isPartialReceipt": true,
+  "notes": "Partial delivery - awaiting backorder"
+}
+
+### Receive with damaged items
+POST {{baseUrl}}/purchase-orders/{{po1Id}}/receive
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "receivedItems": [
+    {
+      "product": "{{productId1}}",
+      "quantityReceived": 95,
+      "quantityDamaged": 5,
+      "condition": "damaged",
+      "notes": "5 units damaged during shipping - claim filed"
+    }
+  ],
+  "receivedDate": "2025-01-15",
+  "notes": "Damage noted, supplier notified"
+}
+
+### Record second partial receipt
+POST {{baseUrl}}/purchase-orders/{{po2Id}}/receive
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "receivedItems": [
+    {
+      "product": "{{productId2}}",
+      "quantityReceived": 50,
+      "condition": "good",
+      "notes": "Backordered items received"
+    },
+    {
+      "product": "{{productId3}}",
+      "quantityReceived": 100,
+      "condition": "good"
+    }
+  ],
+  "receivedDate": "2025-01-25",
+  "isPartialReceipt": false,
+  "notes": "Final delivery - order complete"
+}
+
+### ============================================
+### GET RECEIVING HISTORY
+### ============================================
+
+### Get receiving history for PO
+GET {{baseUrl}}/purchase-orders/{{po1Id}}/receives
+Authorization: Bearer {{token}}
+
+### Get all goods receipts
+GET {{baseUrl}}/purchase-orders/receives
+Authorization: Bearer {{token}}
+
+### Filter receipts by date
+GET {{baseUrl}}/purchase-orders/receives?startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### ============================================
+### UPDATE PURCHASE ORDER DETAILS
+### ============================================
+
+### Update PO items (before approval)
+PATCH {{baseUrl}}/purchase-orders/{{po1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 120,
+      "unitPrice": 80000,
+      "totalPrice": 9600000
+    }
+  ],
+  "subtotal": 9600000,
+  "taxAmount": 960000,
+  "totalAmount": 10560000,
+  "notes": "Updated quantity from 100 to 120 units"
+}
+
+### Update expected delivery date
+PATCH {{baseUrl}}/purchase-orders/{{po1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "expectedDeliveryDate": "2025-01-18",
+  "notes": "Delivery date extended due to supplier delay"
+}
+
+### Update supplier notes
+PATCH {{baseUrl}}/purchase-orders/{{po1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Supplier confirmed delivery date, tracking number: TRK123456"
+}
+
+### ============================================
+### PURCHASE ORDER STATISTICS
+### ============================================
+
+### Get PO statistics summary
+GET {{baseUrl}}/purchase-orders/stats/summary
+Authorization: Bearer {{token}}
+
+### Get POs by status count
+GET {{baseUrl}}/purchase-orders/stats/by-status
+Authorization: Bearer {{token}}
+
+### Get total purchase value
+GET {{baseUrl}}/purchase-orders/stats/value?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Get purchases by supplier
+GET {{baseUrl}}/purchase-orders/stats/by-supplier?limit=10
+Authorization: Bearer {{token}}
+
+### Get pending POs (awaiting approval)
+GET {{baseUrl}}/purchase-orders/stats/pending
+Authorization: Bearer {{token}}
+
+### Get overdue POs (past expected delivery)
+GET {{baseUrl}}/purchase-orders/stats/overdue
+Authorization: Bearer {{token}}
+
+### Get monthly purchase report
+GET {{baseUrl}}/purchase-orders/stats/monthly?year=2025&month=1
+Authorization: Bearer {{token}}
+
+### ============================================
+### PURCHASE ORDER REPORTS
+### ============================================
+
+### Export POs to CSV
+GET {{baseUrl}}/purchase-orders/export?format=csv&startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### Export POs to Excel
+GET {{baseUrl}}/purchase-orders/export?format=excel&startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### Export PO to PDF (single)
+GET {{baseUrl}}/purchase-orders/{{po1Id}}/export?format=pdf
+Authorization: Bearer {{token}}
+
+### Get receiving report
+GET {{baseUrl}}/purchase-orders/reports/receiving?startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### ============================================
+### TESTING & VALIDATION
+### ============================================
+
+### Test - Create PO without auth (should fail 401)
+POST {{baseUrl}}/purchase-orders
+Content-Type: application/json
+
+{
+  "supplier": "{{supplierId1}}",
+  "items": []
+}
+
+### Test - Create PO with invalid supplier (should fail 404)
+POST {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplier": "000000000000000000000000",
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 100,
+      "unitPrice": 80000
+    }
+  ]
+}
+
+### Test - Create PO with empty items (should fail 400)
+POST {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplier": "{{supplierId1}}",
+  "items": [],
+  "totalAmount": 0
+}
+
+### Test - Create PO with negative quantity (should fail 400)
+POST {{baseUrl}}/purchase-orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplier": "{{supplierId1}}",
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": -10,
+      "unitPrice": 80000
+    }
+  ]
+}
+
+### Test - Approve already approved PO (should fail 400)
+PATCH {{baseUrl}}/purchase-orders/{{po1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "approved"
+}
+
+### Test - Receive more than ordered (should fail 400)
+POST {{baseUrl}}/purchase-orders/{{po1Id}}/receive
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "receivedItems": [
+    {
+      "product": "{{productId1}}",
+      "quantityReceived": 9999,
+      "condition": "good"
+    }
+  ]
+}
+
+### ============================================
+### NOTES
+### ============================================
+
+# Purchase Order Status Workflow:
+# 1. draft → Created but not submitted
+# 2. pending → Submitted, awaiting approval
+# 3. approved → Approved, sent to supplier
+# 4. received → Goods received, PO complete
+# 5. cancelled → PO cancelled/rejected
+#
+# Receiving Status:
+# - not_received: No goods received yet
+# - partially_received: Some items received
+# - fully_received: All items received
+#
+# Auto-Generated Fields:
+# - poNumber: PO2025000001 (auto-incremented)
+# - orderDate: Current timestamp
+# - createdBy: Current logged-in user
+#
+# Business Logic:
+# 1. Draft PO can be edited
+# 2. Pending PO awaits approval (manager only)
+# 3. Approved PO sent to supplier (no more edits)
+# 4. Receiving process:
+#    - Can receive partially
+#    - Track damaged items
+#    - Multiple receipts for one PO
+# 5. Upon receiving:
+#    - Update inventory stock levels
+#    - Create inventory movement records
+#    - Update PO receiving status
+# 6. Payment tracking:
+#    - Link payments to PO
+#    - Track outstanding balance
+#
+# Integration:
+# - Links to Supplier model
+# - Links to Product model (items)
+# - Links to Inventory (auto stock-in on receive)
+# - Links to Payment model (purchase payments)
+#
+# Reports:
+# - Purchase value by period
+# - Purchase by supplier
+# - Pending approvals
+# - Overdue deliveries
+# - Receiving accuracy (ordered vs received)
+#
+# Validation:
+# - Must have at least one item
+# - Quantities must be positive
+# - Prices must be positive
+# - Supplier must exist
+# - Products must exist
+# - Cannot edit after approval
+# - Cannot receive more than ordered (total across all receipts)

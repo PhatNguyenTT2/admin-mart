@@ -1,0 +1,586 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
+
+### ============================================
+### AUTHENTICATION (Run this first!)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token
+@token = {{loginResponse.response.body.data.token}}
+
+### ============================================
+### CREATE SUPPLIERS
+### ============================================
+### NOTE: These endpoints require controller implementation
+### Status: 🟡 Model Ready, Controller Pending
+
+### 1. Create Supplier - Food Manufacturer
+# @name supplier1
+POST {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyName": "Công ty TNHH Thực Phẩm Miền Nam",
+  "supplierCode": "SUP-TP-001",
+  "supplierType": "manufacturer",
+  "businessRegistration": "0123456789",
+  "taxCode": "0123456789-001",
+  "contactPerson": {
+    "name": "Nguyễn Văn A",
+    "position": "Sales Manager",
+    "phone": "0901234567",
+    "email": "sales@thucphammienna.com"
+  },
+  "address": {
+    "street": "123 Đường 3 Tháng 2",
+    "district": "Quận 10",
+    "city": "Hồ Chí Minh",
+    "country": "Vietnam",
+    "postalCode": "700000"
+  },
+  "phone": "0281234567",
+  "email": "info@thucphammienna.com",
+  "website": "https://thucphammienna.com",
+  "paymentTerms": "net30",
+  "creditLimit": 100000000,
+  "productCategories": ["Thực phẩm tươi sống", "Thực phẩm chế biến"],
+  "notes": "Nhà cung cấp chính cho thực phẩm tươi sống và chế biến"
+}
+
+@supplier1Id = {{supplier1.response.body.data.supplier._id}}
+
+### 2. Create Supplier - Beverage Distributor
+# @name supplier2
+POST {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyName": "Công ty Phân Phối Đồ Uống ABC",
+  "supplierCode": "SUP-DU-001",
+  "supplierType": "distributor",
+  "businessRegistration": "0987654321",
+  "taxCode": "0987654321-001",
+  "contactPerson": {
+    "name": "Trần Thị B",
+    "position": "Account Manager",
+    "phone": "0912345678",
+    "email": "b.tran@abcbeverage.vn"
+  },
+  "address": {
+    "street": "456 Nguyễn Huệ",
+    "district": "Quận 1",
+    "city": "Hồ Chí Minh",
+    "country": "Vietnam",
+    "postalCode": "700000"
+  },
+  "phone": "0287654321",
+  "email": "info@abcbeverage.vn",
+  "website": "https://abcbeverage.vn",
+  "paymentTerms": "net15",
+  "creditLimit": 50000000,
+  "bankDetails": {
+    "bankName": "Vietcombank",
+    "accountNumber": "0123456789012",
+    "accountName": "Công ty Phân Phối Đồ Uống ABC",
+    "branch": "Chi nhánh TP.HCM"
+  },
+  "productCategories": ["Đồ uống", "Nước giải khát"],
+  "notes": "Phân phối các loại nước giải khát, bia, rượu"
+}
+
+@supplier2Id = {{supplier2.response.body.data.supplier._id}}
+
+### 3. Create Supplier - Household Products Wholesaler
+POST {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyName": "Công ty TNHH Gia Dụng Hoàng Gia",
+  "supplierCode": "SUP-GD-001",
+  "supplierType": "wholesaler",
+  "businessRegistration": "1122334455",
+  "taxCode": "1122334455-001",
+  "contactPerson": {
+    "name": "Lê Văn C",
+    "position": "Business Development",
+    "phone": "0923456789",
+    "email": "c.le@hoanggia.vn"
+  },
+  "address": {
+    "street": "789 Lê Lợi",
+    "district": "Quận 3",
+    "city": "Hồ Chí Minh",
+    "country": "Vietnam",
+    "postalCode": "700000"
+  },
+  "phone": "0289876543",
+  "email": "contact@hoanggia.vn",
+  "paymentTerms": "cod",
+  "creditLimit": 30000000,
+  "productCategories": ["Đồ gia dụng", "Vật dụng nhà bếp"],
+  "notes": "Chuyên cung cấp đồ gia dụng, vật dụng nhà bếp"
+}
+
+### 4. Create Supplier - Beauty Products Importer
+POST {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyName": "Công ty Nhập Khẩu Mỹ Phẩm Luxury",
+  "supplierCode": "SUP-MP-001",
+  "supplierType": "importer",
+  "businessRegistration": "5544332211",
+  "taxCode": "5544332211-001",
+  "contactPerson": {
+    "name": "Phạm Thị D",
+    "position": "Import Manager",
+    "phone": "0934567890",
+    "email": "d.pham@luxurybeauty.vn"
+  },
+  "address": {
+    "street": "321 Pasteur",
+    "district": "Quận 1",
+    "city": "Hồ Chí Minh",
+    "country": "Vietnam",
+    "postalCode": "700000"
+  },
+  "phone": "0283456789",
+  "email": "info@luxurybeauty.vn",
+  "website": "https://luxurybeauty.vn",
+  "paymentTerms": "net60",
+  "creditLimit": 200000000,
+  "bankDetails": {
+    "bankName": "Techcombank",
+    "accountNumber": "9876543210987",
+    "accountName": "Công ty Nhập Khẩu Mỹ Phẩm Luxury",
+    "branch": "Chi nhánh Quận 1"
+  },
+  "productCategories": ["Mỹ phẩm", "Sản phẩm chăm sóc da"],
+  "notes": "Nhập khẩu mỹ phẩm cao cấp từ Hàn Quốc, Nhật Bản"
+}
+
+### 5. Create Supplier - Retail Goods
+POST {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyName": "Công ty TNHH Bán Lẻ Việt",
+  "supplierCode": "SUP-BL-001",
+  "supplierType": "retailer",
+  "businessRegistration": "6677889900",
+  "taxCode": "6677889900-001",
+  "contactPerson": {
+    "name": "Hoàng Văn E",
+    "position": "Store Manager",
+    "phone": "0945678901",
+    "email": "e.hoang@retailviet.com"
+  },
+  "address": {
+    "street": "654 Võ Văn Tần",
+    "district": "Quận 3",
+    "city": "Hồ Chí Minh",
+    "country": "Vietnam"
+  },
+  "phone": "0285432109",
+  "email": "info@retailviet.com",
+  "paymentTerms": "net90",
+  "creditLimit": 75000000,
+  "productCategories": ["Đa dạng"],
+  "notes": "Cung cấp đa dạng sản phẩm bán lẻ"
+}
+
+### ============================================
+### READ SUPPLIERS
+### ============================================
+
+### Get all suppliers
+GET {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+
+### Get suppliers with pagination
+GET {{baseUrl}}/suppliers?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Filter by supplier type - Manufacturer
+GET {{baseUrl}}/suppliers?type=manufacturer
+Authorization: Bearer {{token}}
+
+### Filter by supplier type - Distributor
+GET {{baseUrl}}/suppliers?type=distributor
+Authorization: Bearer {{token}}
+
+### Filter by supplier type - Wholesaler
+GET {{baseUrl}}/suppliers?type=wholesaler
+Authorization: Bearer {{token}}
+
+### Filter by supplier type - Importer
+GET {{baseUrl}}/suppliers?type=importer
+Authorization: Bearer {{token}}
+
+### Filter by status - Active
+GET {{baseUrl}}/suppliers?status=active
+Authorization: Bearer {{token}}
+
+### Filter by status - Inactive
+GET {{baseUrl}}/suppliers?status=inactive
+Authorization: Bearer {{token}}
+
+### Filter by payment terms - NET30
+GET {{baseUrl}}/suppliers?paymentTerms=net30
+Authorization: Bearer {{token}}
+
+### Filter by payment terms - COD
+GET {{baseUrl}}/suppliers?paymentTerms=cod
+Authorization: Bearer {{token}}
+
+### Search suppliers by name
+GET {{baseUrl}}/suppliers?search=thực%20phẩm
+Authorization: Bearer {{token}}
+
+### Search suppliers by code
+GET {{baseUrl}}/suppliers?supplierCode=SUP-TP-001
+Authorization: Bearer {{token}}
+
+### Sort suppliers by credit limit (descending)
+GET {{baseUrl}}/suppliers?sort=-creditLimit
+Authorization: Bearer {{token}}
+
+### Sort suppliers by name (ascending)
+GET {{baseUrl}}/suppliers?sort=companyName
+Authorization: Bearer {{token}}
+
+### Get supplier by ID
+GET {{baseUrl}}/suppliers/{{supplier1Id}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### UPDATE SUPPLIER
+### ============================================
+
+### Update supplier contact info
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "phone": "0281234999",
+  "email": "newemail@thucphammienna.com",
+  "contactPerson": {
+    "name": "Nguyễn Văn A",
+    "position": "Senior Sales Manager",
+    "phone": "0901234999",
+    "email": "a.nguyen@thucphammienna.com"
+  }
+}
+
+### Update supplier payment terms
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "paymentTerms": "net60",
+  "notes": "Payment terms extended due to long-term partnership"
+}
+
+### Update supplier credit limit
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "creditLimit": 150000000,
+  "notes": "Credit limit increased due to excellent payment history"
+}
+
+### Update supplier bank details
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "bankDetails": {
+    "bankName": "Vietcombank",
+    "accountNumber": "1234567890123",
+    "accountName": "Công ty TNHH Thực Phẩm Miền Nam",
+    "branch": "Chi nhánh Quận 10"
+  }
+}
+
+### Update supplier address
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "address": {
+    "street": "123 Đường 3 Tháng 2 (Tầng 5)",
+    "district": "Quận 10",
+    "city": "Hồ Chí Minh",
+    "country": "Vietnam",
+    "postalCode": "700000"
+  }
+}
+
+### ============================================
+### SUPPLIER STATUS MANAGEMENT
+### ============================================
+
+### Activate supplier
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": true,
+  "notes": "Supplier re-activated after quality check"
+}
+
+### Deactivate supplier
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": false,
+  "notes": "Temporarily suspended due to quality issues"
+}
+
+### ============================================
+### SUPPLIER PRODUCTS
+### ============================================
+
+### Get products from supplier
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/products
+Authorization: Bearer {{token}}
+
+### Get products with pagination
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/products?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### ============================================
+### SUPPLIER PURCHASE ORDERS
+### ============================================
+
+### Get all purchase orders for supplier
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/purchase-orders
+Authorization: Bearer {{token}}
+
+### Get POs with filters
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/purchase-orders?status=approved&startDate=2025-01-01
+Authorization: Bearer {{token}}
+
+### ============================================
+### SUPPLIER PAYMENTS
+### ============================================
+
+### Get payment history for supplier
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/payments
+Authorization: Bearer {{token}}
+
+### Get payments with date filter
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/payments?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Get outstanding payments
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/outstanding
+Authorization: Bearer {{token}}
+
+### ============================================
+### SUPPLIER PERFORMANCE
+### ============================================
+
+### Get supplier performance metrics
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/performance
+Authorization: Bearer {{token}}
+
+### Get supplier performance for period
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/performance?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Update supplier rating
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}/rating
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "qualityRating": 4.5,
+  "deliveryRating": 4.8,
+  "serviceRating": 4.7,
+  "notes": "Excellent quality and on-time delivery"
+}
+
+### ============================================
+### SUPPLIER STATISTICS
+### ============================================
+
+### Get supplier statistics
+GET {{baseUrl}}/suppliers/stats/summary
+Authorization: Bearer {{token}}
+
+### Get suppliers by type count
+GET {{baseUrl}}/suppliers/stats/by-type
+Authorization: Bearer {{token}}
+
+### Get top suppliers by purchase value
+GET {{baseUrl}}/suppliers/stats/top-by-value?limit=10
+Authorization: Bearer {{token}}
+
+### Get top suppliers by order count
+GET {{baseUrl}}/suppliers/stats/top-by-orders?limit=10
+Authorization: Bearer {{token}}
+
+### Get suppliers with outstanding balance
+GET {{baseUrl}}/suppliers/stats/outstanding
+Authorization: Bearer {{token}}
+
+### ============================================
+### BULK OPERATIONS
+### ============================================
+
+### Export suppliers to CSV
+GET {{baseUrl}}/suppliers/export?format=csv
+Authorization: Bearer {{token}}
+
+### Export suppliers to Excel
+GET {{baseUrl}}/suppliers/export?format=excel
+Authorization: Bearer {{token}}
+
+### Export suppliers to PDF
+GET {{baseUrl}}/suppliers/export?format=pdf
+Authorization: Bearer {{token}}
+
+### Export specific supplier details
+GET {{baseUrl}}/suppliers/{{supplier1Id}}/export?format=pdf
+Authorization: Bearer {{token}}
+
+### ============================================
+### DELETE SUPPLIER
+### ============================================
+
+### Delete supplier (soft delete)
+DELETE {{baseUrl}}/suppliers/{{supplier1Id}}
+Authorization: Bearer {{token}}
+
+### Delete supplier with reason
+DELETE {{baseUrl}}/suppliers/{{supplier1Id}}?reason=Out%20of%20business
+Authorization: Bearer {{token}}
+
+### ============================================
+### TESTING & VALIDATION
+### ============================================
+
+### Test - Create supplier without auth (should fail 401)
+POST {{baseUrl}}/suppliers
+Content-Type: application/json
+
+{
+  "companyName": "Test Company"
+}
+
+### Test - Create supplier with missing required fields (should fail 400)
+POST {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "supplierCode": "TEST-001"
+}
+
+### Test - Create supplier with duplicate code (should fail 400)
+POST {{baseUrl}}/suppliers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyName": "Duplicate Supplier",
+  "supplierCode": "SUP-TP-001",
+  "contactPerson": {
+    "name": "Test",
+    "phone": "0901234567"
+  }
+}
+
+### Test - Update non-existent supplier (should fail 404)
+PATCH {{baseUrl}}/suppliers/000000000000000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "companyName": "Test"
+}
+
+### Test - Invalid credit limit (should fail 400)
+PATCH {{baseUrl}}/suppliers/{{supplier1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "creditLimit": -100000
+}
+
+### ============================================
+### NOTES
+### ============================================
+
+# Supplier Types:
+# - manufacturer: Nhà sản xuất
+# - distributor: Nhà phân phối
+# - wholesaler: Nhà bán sỉ
+# - importer: Nhà nhập khẩu
+# - retailer: Nhà bán lẻ
+#
+# Payment Terms:
+# - cod: Cash on Delivery (Thanh toán khi nhận hàng)
+# - net15: Net 15 days (Thanh toán trong 15 ngày)
+# - net30: Net 30 days (Thanh toán trong 30 ngày)
+# - net60: Net 60 days (Thanh toán trong 60 ngày)
+# - net90: Net 90 days (Thanh toán trong 90 ngày)
+#
+# Auto-Generated Fields:
+# - supplierNumber: SUP2025000001 (auto-incremented)
+# - createdAt: Current timestamp
+#
+# Business Logic:
+# 1. Each supplier has unique supplierCode
+# 2. Credit limit controls maximum outstanding balance
+# 3. Payment terms determine payment due dates
+# 4. Supplier ratings track performance (quality, delivery, service)
+# 5. Deactivating supplier prevents new purchase orders
+#
+# Integration:
+# - Links to PurchaseOrder model
+# - Links to Payment model (purchase payments)
+# - Links to Product model (supplier-product relationship)
+# - Performance metrics calculated from POs and payments
+#
+# Validation:
+# - Company name required
+# - Contact person with name and phone required
+# - Valid email format
+# - Credit limit must be non-negative
+# - Supplier code unique
+# - Cannot delete supplier with active POs
+#
+# Reports:
+# - Total suppliers by type
+# - Top suppliers by purchase value
+# - Top suppliers by order count
+# - Outstanding balances
+# - Supplier performance ratings

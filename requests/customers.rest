@@ -1,0 +1,452 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
+
+### ============================================
+### AUTHENTICATION (Run this first!)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token
+@token = {{loginResponse.response.body.data.token}}
+
+### ============================================
+### CREATE CUSTOMERS
+### ============================================
+### NOTE: These endpoints require controller implementation
+### Status: 🟡 Model Ready, Controller Pending
+
+### 1. Create Customer - Retail
+# @name customer1
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Nguyen Van A",
+  "email": "nguyenvana@example.com",
+  "phone": "+84901234567",
+  "address": {
+    "street": "123 Le Loi Street",
+    "city": "Ho Chi Minh City",
+    "state": "HCM",
+    "zipCode": "70000",
+    "country": "Vietnam"
+  },
+  "dateOfBirth": "1990-05-15",
+  "gender": "male",
+  "customerType": "retail"
+}
+
+@customer1Id = {{customer1.response.body.data.customer._id}}
+
+### 2. Create Customer - Wholesale
+# @name customer2
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Tran Thi B",
+  "email": "tranthib@business.com",
+  "phone": "+84912345678",
+  "address": {
+    "street": "456 Nguyen Hue Boulevard",
+    "city": "Ho Chi Minh City",
+    "state": "HCM",
+    "zipCode": "70000",
+    "country": "Vietnam"
+  },
+  "dateOfBirth": "1985-08-20",
+  "gender": "female",
+  "customerType": "wholesale"
+}
+
+@customer2Id = {{customer2.response.body.data.customer._id}}
+
+### 3. Create Customer - VIP
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Le Van C",
+  "email": "levanc.vip@example.com",
+  "phone": "+84923456789",
+  "address": {
+    "street": "789 Vo Van Tan Street",
+    "city": "Ho Chi Minh City",
+    "state": "HCM",
+    "zipCode": "70000",
+    "country": "Vietnam"
+  },
+  "dateOfBirth": "1980-12-10",
+  "gender": "male",
+  "customerType": "vip",
+  "loyaltyPoints": 5000,
+  "notes": "Preferred customer - expedited shipping"
+}
+
+### 4. Create Customer - Walk-in (No Email)
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Pham Thi D",
+  "phone": "+84934567890",
+  "address": {
+    "street": "321 Pham Ngu Lao Street",
+    "city": "Ho Chi Minh City",
+    "state": "HCM",
+    "zipCode": "70000",
+    "country": "Vietnam"
+  },
+  "gender": "female",
+  "customerType": "retail",
+  "notes": "Walk-in customer, no email provided"
+}
+
+### 5. Create Multiple Customers for Testing
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Hoang Van E",
+  "email": "hoangvane@example.com",
+  "phone": "+84945678901",
+  "customerType": "retail"
+}
+
+###
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Vo Thi F",
+  "email": "vothif@example.com",
+  "phone": "+84956789012",
+  "customerType": "wholesale"
+}
+
+### ============================================
+### READ CUSTOMERS
+### ============================================
+
+### Get all customers
+GET {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+
+### Get customers with pagination
+GET {{baseUrl}}/customers?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Filter customers by type
+GET {{baseUrl}}/customers?type=retail
+Authorization: Bearer {{token}}
+
+### Filter customers by type - Wholesale
+GET {{baseUrl}}/customers?type=wholesale
+Authorization: Bearer {{token}}
+
+### Filter customers by type - VIP
+GET {{baseUrl}}/customers?type=vip
+Authorization: Bearer {{token}}
+
+### Search customers by name
+GET {{baseUrl}}/customers?search=Nguyen
+Authorization: Bearer {{token}}
+
+### Search customers by email
+GET {{baseUrl}}/customers?search=example.com
+Authorization: Bearer {{token}}
+
+### Search customers by phone
+GET {{baseUrl}}/customers?search=0901234567
+Authorization: Bearer {{token}}
+
+### Sort customers by total spent (descending)
+GET {{baseUrl}}/customers?sort=-totalSpent
+Authorization: Bearer {{token}}
+
+### Sort customers by total orders
+GET {{baseUrl}}/customers?sort=-totalOrders
+Authorization: Bearer {{token}}
+
+### Get active customers only
+GET {{baseUrl}}/customers?isActive=true
+Authorization: Bearer {{token}}
+
+### Get customer by ID
+GET {{baseUrl}}/customers/{{customer1Id}}
+Authorization: Bearer {{token}}
+
+### Get customer by customer code
+GET {{baseUrl}}/customers/search?customerCode=CUST2025000001
+Authorization: Bearer {{token}}
+
+### ============================================
+### GET CUSTOMER ORDERS
+### ============================================
+
+### Get customer's order history
+GET {{baseUrl}}/customers/{{customer1Id}}/orders
+Authorization: Bearer {{token}}
+
+### Get customer's orders with pagination
+GET {{baseUrl}}/customers/{{customer1Id}}/orders?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Get customer's orders by status
+GET {{baseUrl}}/customers/{{customer1Id}}/orders?status=delivered
+Authorization: Bearer {{token}}
+
+### ============================================
+### GET CUSTOMER STATISTICS
+### ============================================
+
+### Get customer statistics
+GET {{baseUrl}}/customers/{{customer1Id}}/stats
+Authorization: Bearer {{token}}
+
+### Get top customers by revenue
+GET {{baseUrl}}/customers/stats/top-customers?limit=10&sortBy=totalSpent
+Authorization: Bearer {{token}}
+
+### Get top customers by order count
+GET {{baseUrl}}/customers/stats/top-customers?limit=10&sortBy=totalOrders
+Authorization: Bearer {{token}}
+
+### Get customer lifetime value
+GET {{baseUrl}}/customers/{{customer1Id}}/lifetime-value
+Authorization: Bearer {{token}}
+
+### Get customer segmentation report
+GET {{baseUrl}}/customers/stats/segmentation
+Authorization: Bearer {{token}}
+
+### ============================================
+### UPDATE CUSTOMERS
+### ============================================
+
+### Update customer information
+PUT {{baseUrl}}/customers/{{customer1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Nguyen Van A (Updated)",
+  "email": "nguyenvana.new@example.com",
+  "phone": "+84901234567"
+}
+
+### Update customer address
+PUT {{baseUrl}}/customers/{{customer1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "address": {
+    "street": "999 New Address Street",
+    "city": "Ho Chi Minh City",
+    "state": "HCM",
+    "zipCode": "70000",
+    "country": "Vietnam"
+  }
+}
+
+### Update customer type (upgrade to VIP)
+PUT {{baseUrl}}/customers/{{customer1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerType": "vip"
+}
+
+### Add notes to customer
+PUT {{baseUrl}}/customers/{{customer1Id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Preferred delivery time: 9AM-12PM. Gate code: #1234"
+}
+
+### ============================================
+### LOYALTY POINTS MANAGEMENT
+### ============================================
+
+### Add loyalty points
+POST {{baseUrl}}/customers/{{customer1Id}}/loyalty
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "points": 500,
+  "reason": "Purchase reward"
+}
+
+### Redeem loyalty points
+POST {{baseUrl}}/customers/{{customer1Id}}/loyalty/redeem
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "points": 100,
+  "reason": "Discount redemption"
+}
+
+### Get loyalty points history
+GET {{baseUrl}}/customers/{{customer1Id}}/loyalty/history
+Authorization: Bearer {{token}}
+
+### ============================================
+### DEACTIVATE/ACTIVATE CUSTOMERS
+### ============================================
+
+### Deactivate customer
+PATCH {{baseUrl}}/customers/{{customer1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": false,
+  "reason": "Customer request"
+}
+
+### Reactivate customer
+PATCH {{baseUrl}}/customers/{{customer1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### ============================================
+### DELETE CUSTOMERS
+### ============================================
+
+### Delete customer (soft delete - keeps order history)
+DELETE {{baseUrl}}/customers/{{customer1Id}}
+Authorization: Bearer {{token}}
+
+### Hard delete customer (Admin only - removes all data)
+# DELETE {{baseUrl}}/customers/{{customer1Id}}?hard=true
+# Authorization: Bearer {{token}}
+
+### ============================================
+### TESTING & VALIDATION
+### ============================================
+
+### Test - Create customer without auth (should fail 401)
+POST {{baseUrl}}/customers
+Content-Type: application/json
+
+{
+  "fullName": "Unauthorized Customer",
+  "phone": "+84900000000"
+}
+
+### Test - Create customer without required fields (should fail 400)
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Incomplete Customer"
+}
+
+### Test - Create customer with duplicate email (should fail 400)
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Duplicate Email",
+  "email": "nguyenvana@example.com",
+  "phone": "+84900000001",
+  "customerType": "retail"
+}
+
+### Test - Create customer with invalid customer type (should fail 400)
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Invalid Type",
+  "phone": "+84900000002",
+  "customerType": "premium"
+}
+
+### Test - Update customer with invalid ID (should fail 404)
+PUT {{baseUrl}}/customers/000000000000000000000000
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Should Not Work"
+}
+
+### ============================================
+### BULK OPERATIONS
+### ============================================
+
+### Export customers to CSV
+GET {{baseUrl}}/customers/export?format=csv
+Authorization: Bearer {{token}}
+
+### Export customers to Excel
+GET {{baseUrl}}/customers/export?format=excel
+Authorization: Bearer {{token}}
+
+### Import customers from CSV
+# POST {{baseUrl}}/customers/import
+# Authorization: Bearer {{token}}
+# Content-Type: multipart/form-data
+# (File upload)
+
+### ============================================
+### NOTES
+### ============================================
+
+# Customer Types:
+# - retail: Regular individual customers
+# - wholesale: Business/bulk buyers
+# - vip: Premium customers with special privileges
+#
+# Auto-Generated Fields:
+# - customerCode: CUST2025000001 (auto-incremented)
+# - totalSpent: Calculated from orders
+# - totalOrders: Count of orders
+# - averageOrderValue: totalSpent / totalOrders
+# - lastPurchaseDate: Updated on each order
+#
+# Loyalty Points:
+# - Earned on purchases (configurable rate)
+# - Can be redeemed for discounts
+# - VIP customers earn 2x points
+#
+# Statistics Auto-Update:
+# - totalSpent updated when order is paid
+# - totalOrders updated when order is confirmed
+# - averageOrderValue recalculated automatically
+#
+# Business Rules:
+# - Email is optional (sparse index) for walk-in customers
+# - Phone is required
+# - Cannot delete customer with order history (soft delete only)
+# - VIP status can be auto-upgraded based on spending

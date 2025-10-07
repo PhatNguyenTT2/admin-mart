@@ -1,9 +1,9 @@
-### Variables (Switch between local and deployed backend)
+### Variables
 @baseUrl = http://localhost:3001/api
 # @baseUrl = https://admin-mart.onrender.com/api
 
 ### ============================================
-### AUTHENTICATION (Run this first to get token)
+### AUTHENTICATION (Run this first!)
 ### ============================================
 
 ### Login to get token
@@ -16,39 +16,14 @@ Content-Type: application/json
   "password": "admin123"
 }
 
-### Extract token from login response
+### Extract token
 @token = {{loginResponse.response.body.data.token}}
 
 ### ============================================
-### CATEGORIES
+### CREATE CATEGORIES (Run these in order!)
 ### ============================================
 
-### 1. Get All Categories (Public)
-GET {{baseUrl}}/categories
-
-### 2. Get Category by ID (Update categoryId with actual ID from create response)
-@categoryId = 68e2af1298783e455763fc76
-GET {{baseUrl}}/categories/{{categoryId}}
-
-### 3. Get Category by Slug
-GET {{baseUrl}}/categories/slug/grains
-
-### 4. Create Category (Admin Only)
-# @name createCategory
-POST {{baseUrl}}/categories
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "name": "Grains",
-  "description": "Organic grains and cereals",
-  "image": "https://example.com/grains.jpg",
-  "order": 1
-}
-
-### 5. Create Categories from Mock Data (Run these in order!)
-
-### Category 1: Baking material
+### 1. Create Category: Baking Material
 # @name bakingMaterial
 POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
@@ -56,12 +31,14 @@ Content-Type: application/json
 
 {
   "name": "Baking material",
-  "description": "Flour, sugar, baking ingredients and organic grains",
-  "image": "https://www.figma.com/api/mcp/asset/99a37d83-0cb8-40cb-9da2-c9a1c9eb8662",
+  "description": "Essential ingredients for all your baking needs",
+  "image": "https://www.figma.com/api/mcp/asset/category-baking.jpg",
   "order": 1
 }
+### Extract category IDs
+@bakingMaterialId = {{bakingMaterial.response.body.data.category.id}}
 
-### Category 2: Meats
+### 2. Create Category: Meats
 # @name meats
 POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
@@ -70,11 +47,13 @@ Content-Type: application/json
 {
   "name": "Meats",
   "description": "Fresh and frozen meat products",
-  "image": "https://www.figma.com/api/mcp/asset/0359b432-c20d-4378-a587-d6f7e25eeda0",
+  "image": "https://www.figma.com/api/mcp/asset/category-meats.jpg",
   "order": 2
 }
+### Extract category IDs
+@meatsId = {{meats.response.body.data.category.id}}
 
-### Category 3: Milks & Dairies
+### 3. Create Category: Milks & Dairies
 # @name milksDairies
 POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
@@ -83,11 +62,14 @@ Content-Type: application/json
 {
   "name": "Milks & Dairies",
   "description": "Fresh milk, yogurt, cheese and dairy products",
-  "image": "https://www.figma.com/api/mcp/asset/0359b432-c20d-4378-a587-d6f7e25eeda0",
+  "image": "https://www.figma.com/api/mcp/asset/category-dairy.jpg",
   "order": 3
 }
 
-### Category 4: Vegetables
+### Extract category IDs
+@milksDairiesId = {{milksDairies.response.body.data.category.id}}
+
+### 4. Create Category: Vegetables
 # @name vegetables
 POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
@@ -95,12 +77,15 @@ Content-Type: application/json
 
 {
   "name": "Vegetables",
-  "description": "Fresh organic vegetables",
-  "image": "https://www.figma.com/api/mcp/asset/54310325-abd2-4f17-9865-e5ae10f85217",
+  "description": "Fresh organic and conventional vegetables",
+  "image": "https://www.figma.com/api/mcp/asset/category-vegetables.jpg",
   "order": 4
 }
 
-### Category 5: Fresh Fruits
+### Extract category IDs
+@vegetablesId = {{vegetables.response.body.data.category.id}}
+
+### 5. Create Category: Fresh Fruits
 # @name freshFruits
 POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
@@ -108,31 +93,173 @@ Content-Type: application/json
 
 {
   "name": "Fresh Fruits",
-  "description": "Fresh seasonal fruits",
-  "image": "https://www.figma.com/api/mcp/asset/df9e24f5-fc45-431e-a6d1-e9ff64942cb3",
+  "description": "Seasonal fresh fruits, organic and conventional",
+  "image": "https://www.figma.com/api/mcp/asset/category-fruits.jpg",
   "order": 5
 }
 
-### Extract Category IDs for use in create_product.rest
-@bakingMaterialId = {{bakingMaterial.response.body.data.category.id}}
-@meatsId = {{meats.response.body.data.category.id}}
-@milksDairiesId = {{milksDairies.response.body.data.category.id}}
-@vegetablesId = {{vegetables.response.body.data.category.id}}
+### Extract category IDs
 @freshFruitsId = {{freshFruits.response.body.data.category.id}}
 
-### 6. Update Category (Admin Only)
-PUT {{baseUrl}}/categories/{{categoryId}}
+### 6. Create Category: Beverages
+# @name beverages
+POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Organic Grains",
-  "description": "Premium organic grains and cereals",
-  "image": "https://example.com/grains-updated.jpg",
-  "order": 1,
+  "name": "Beverages",
+  "description": "Soft drinks, juices, and refreshing beverages",
+  "image": "https://www.figma.com/api/mcp/asset/category-beverages.jpg",
+  "order": 6
+}
+
+### 7. Create Nested Category: Organic Vegetables (child of Vegetables)
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Organic Vegetables",
+  "description": "100% certified organic vegetables",
+  "parent": "{{vegetablesId}}",
+  "order": 1
+}
+
+### 8. Create Nested Category: Frozen Meats (child of Meats)
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Frozen Meats",
+  "description": "Frozen meat products for longer storage",
+  "parent": "{{meatsId}}",
+  "order": 1
+}
+
+### ============================================
+### READ CATEGORIES
+### ============================================
+
+### Get all categories
+GET {{baseUrl}}/categories
+
+### Get all categories (with auth)
+GET {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+
+### Get category by ID
+GET {{baseUrl}}/categories/{{bakingMaterialId}}
+
+### Get category by ID (with auth)
+GET {{baseUrl}}/categories/{{bakingMaterialId}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### UPDATE CATEGORIES
+### ============================================
+
+### Update category name and description
+PUT {{baseUrl}}/categories/{{bakingMaterialId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Baking Materials & Ingredients",
+  "description": "Complete range of baking ingredients and materials"
+}
+
+### Update category image
+PUT {{baseUrl}}/categories/{{meatsId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "image": "https://www.figma.com/api/mcp/asset/category-meats-updated.jpg"
+}
+
+### Update category order
+PUT {{baseUrl}}/categories/{{vegetablesId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "order": 10
+}
+
+### Deactivate category
+PUT {{baseUrl}}/categories/{{freshFruitsId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### Reactivate category
+PUT {{baseUrl}}/categories/{{freshFruitsId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
   "isActive": true
 }
 
-### 7. Delete Category (Admin Only)
-DELETE {{baseUrl}}/categories/{{categoryId}}
+### ============================================
+### DELETE CATEGORIES
+### ============================================
+
+### Delete category (Admin only)
+# DELETE {{baseUrl}}/categories/{{categoryIdToDelete}}
+# Authorization: Bearer {{token}}
+
+### ============================================
+### VERIFICATION & TESTING
+### ============================================
+
+### Verify all categories created
+GET {{baseUrl}}/categories
+
+### Count categories
+# Should return 8 categories (5 main + 3 additional)
+GET {{baseUrl}}/categories
+
+### Test - Create category without auth (should fail 401)
+POST {{baseUrl}}/categories
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Category"
+}
+
+### Test - Create category with duplicate name (should fail 400)
+POST {{baseUrl}}/categories
 Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Baking material"
+}
+
+### Test - Get non-existent category (should fail 404)
+GET {{baseUrl}}/categories/000000000000000000000000
+
+### ============================================
+### NOTES
+### ============================================
+
+# After running this file:
+# 1. Copy the category IDs to create_all_products.rest
+# 2. Update the @bakingMaterialId, @meatsId, etc. variables in products file
+# 3. Run create_all_products.rest to create products with these categories
+#
+# Category Structure:
+# - Baking material (5 products)
+# - Meats (4 products)
+#   - Frozen Meats (subset)
+# - Milks & Dairies (3 products)
+# - Vegetables (2 products)
+#   - Organic Vegetables (subset)
+# - Fresh Fruits (3 products)
+# - Beverages (1 product)

@@ -1,0 +1,573 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
+
+### ============================================
+### AUTHENTICATION (Run this first!)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token
+@token = {{loginResponse.response.body.data.token}}
+
+### ============================================
+### CREATE REPORTS
+### ============================================
+### NOTE: These endpoints require controller implementation
+### Status: 🟡 Model Ready, Controller Pending
+
+### 1. Generate Sales Report - Daily
+# @name report1
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "sales",
+  "title": "Báo cáo Doanh số Bán hàng - Ngày 07/01/2025",
+  "period": {
+    "startDate": "2025-01-07",
+    "endDate": "2025-01-07"
+  },
+  "format": "pdf",
+  "parameters": {
+    "groupBy": "product",
+    "includeCharts": true
+  }
+}
+
+@report1Id = {{report1.response.body.data.report._id}}
+
+### 2. Generate Inventory Report - Monthly
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "inventory",
+  "title": "Báo cáo Tồn kho - Tháng 01/2025",
+  "period": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-01-31"
+  },
+  "format": "excel",
+  "parameters": {
+    "includeMovements": true,
+    "includeLowStock": true,
+    "includeOutOfStock": true
+  }
+}
+
+### 3. Generate Revenue Report - Quarterly
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "revenue",
+  "title": "Báo cáo Doanh thu - Quý 1/2025",
+  "period": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-03-31"
+  },
+  "format": "pdf",
+  "parameters": {
+    "groupBy": "month",
+    "includeComparison": true,
+    "compareWithLastYear": true
+  }
+}
+
+### 4. Generate Profit Report - Monthly
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "profit",
+  "title": "Báo cáo Lợi nhuận - Tháng 01/2025",
+  "period": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-01-31"
+  },
+  "format": "pdf",
+  "parameters": {
+    "includeExpenses": true,
+    "includeCostBreakdown": true,
+    "includeMarginAnalysis": true
+  }
+}
+
+### 5. Generate Customer Report - Yearly
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "customer",
+  "title": "Báo cáo Khách hàng - Năm 2025",
+  "period": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-12-31"
+  },
+  "format": "excel",
+  "parameters": {
+    "includeNewCustomers": true,
+    "includeTopCustomers": true,
+    "includeSegmentation": true,
+    "topCustomersLimit": 20
+  }
+}
+
+### 6. Generate Product Report - Monthly
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "product",
+  "title": "Báo cáo Sản phẩm - Tháng 01/2025",
+  "period": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-01-31"
+  },
+  "format": "pdf",
+  "parameters": {
+    "includeBestSellers": true,
+    "includeSlowMoving": true,
+    "includeOutOfStock": true,
+    "topProductsLimit": 10,
+    "slowMovingThreshold": 5
+  }
+}
+
+### 7. Generate Supplier Report - Quarterly
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "supplier",
+  "title": "Báo cáo Nhà cung cấp - Quý 1/2025",
+  "period": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-03-31"
+  },
+  "format": "excel",
+  "parameters": {
+    "includePerformanceRatings": true,
+    "includeOrderStatistics": true,
+    "includePaymentHistory": true,
+    "topSuppliersLimit": 15
+  }
+}
+
+### 8. Generate Sales Report - JSON Format
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "sales",
+  "title": "Báo cáo Doanh số - API Export",
+  "period": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-01-31"
+  },
+  "format": "json",
+  "parameters": {
+    "includeDetails": true
+  }
+}
+
+### 9. Generate Custom Date Range Report
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "revenue",
+  "title": "Báo cáo Doanh thu - Tùy chỉnh",
+  "period": {
+    "startDate": "2024-12-15",
+    "endDate": "2025-01-15"
+  },
+  "format": "csv",
+  "parameters": {
+    "groupBy": "week"
+  }
+}
+
+### ============================================
+### READ REPORTS
+### ============================================
+
+### Get all reports
+GET {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+
+### Get reports with pagination
+GET {{baseUrl}}/reports?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Filter reports by type - Sales
+GET {{baseUrl}}/reports?type=sales
+Authorization: Bearer {{token}}
+
+### Filter reports by type - Inventory
+GET {{baseUrl}}/reports?type=inventory
+Authorization: Bearer {{token}}
+
+### Filter reports by type - Revenue
+GET {{baseUrl}}/reports?type=revenue
+Authorization: Bearer {{token}}
+
+### Filter reports by type - Profit
+GET {{baseUrl}}/reports?type=profit
+Authorization: Bearer {{token}}
+
+### Filter reports by type - Customer
+GET {{baseUrl}}/reports?type=customer
+Authorization: Bearer {{token}}
+
+### Filter reports by type - Product
+GET {{baseUrl}}/reports?type=product
+Authorization: Bearer {{token}}
+
+### Filter reports by type - Supplier
+GET {{baseUrl}}/reports?type=supplier
+Authorization: Bearer {{token}}
+
+### Filter reports by status - Completed
+GET {{baseUrl}}/reports?status=completed
+Authorization: Bearer {{token}}
+
+### Filter reports by status - Pending
+GET {{baseUrl}}/reports?status=pending
+Authorization: Bearer {{token}}
+
+### Filter reports by format - PDF
+GET {{baseUrl}}/reports?format=pdf
+Authorization: Bearer {{token}}
+
+### Filter reports by format - Excel
+GET {{baseUrl}}/reports?format=excel
+Authorization: Bearer {{token}}
+
+### Filter reports by date range
+GET {{baseUrl}}/reports?startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### Get report by ID
+GET {{baseUrl}}/reports/{{report1Id}}
+Authorization: Bearer {{token}}
+
+### Search reports by title
+GET {{baseUrl}}/reports?search=Doanh%20số
+Authorization: Bearer {{token}}
+
+### Sort reports by date (newest first)
+GET {{baseUrl}}/reports?sort=-createdAt
+Authorization: Bearer {{token}}
+
+### ============================================
+### DOWNLOAD REPORTS
+### ============================================
+
+### Download report file
+GET {{baseUrl}}/reports/{{report1Id}}/download
+Authorization: Bearer {{token}}
+
+### Get report file URL
+GET {{baseUrl}}/reports/{{report1Id}}/url
+Authorization: Bearer {{token}}
+
+### ============================================
+### PRE-BUILT REPORT ENDPOINTS
+### ============================================
+
+### Get Today's Sales Summary
+GET {{baseUrl}}/reports/quick/sales/today
+Authorization: Bearer {{token}}
+
+### Get This Week's Sales Summary
+GET {{baseUrl}}/reports/quick/sales/week
+Authorization: Bearer {{token}}
+
+### Get This Month's Sales Summary
+GET {{baseUrl}}/reports/quick/sales/month
+Authorization: Bearer {{token}}
+
+### Get This Year's Sales Summary
+GET {{baseUrl}}/reports/quick/sales/year
+Authorization: Bearer {{token}}
+
+### Get Current Inventory Status
+GET {{baseUrl}}/reports/quick/inventory/current
+Authorization: Bearer {{token}}
+
+### Get Low Stock Items
+GET {{baseUrl}}/reports/quick/inventory/low-stock
+Authorization: Bearer {{token}}
+
+### Get Out of Stock Items
+GET {{baseUrl}}/reports/quick/inventory/out-of-stock
+Authorization: Bearer {{token}}
+
+### Get Top Selling Products (This Month)
+GET {{baseUrl}}/reports/quick/products/top-sellers?period=month&limit=10
+Authorization: Bearer {{token}}
+
+### Get Slow Moving Products
+GET {{baseUrl}}/reports/quick/products/slow-moving?threshold=5
+Authorization: Bearer {{token}}
+
+### Get Top Customers (This Year)
+GET {{baseUrl}}/reports/quick/customers/top?period=year&limit=20
+Authorization: Bearer {{token}}
+
+### Get Revenue Summary (This Month)
+GET {{baseUrl}}/reports/quick/revenue/month
+Authorization: Bearer {{token}}
+
+### Get Profit Margin Analysis (This Month)
+GET {{baseUrl}}/reports/quick/profit/month
+Authorization: Bearer {{token}}
+
+### Get Supplier Performance
+GET {{baseUrl}}/reports/quick/suppliers/performance
+Authorization: Bearer {{token}}
+
+### ============================================
+### SCHEDULED REPORTS
+### ============================================
+
+### Create Scheduled Report - Daily Sales
+POST {{baseUrl}}/reports/schedule
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "sales",
+  "title": "Daily Sales Report - Automated",
+  "schedule": "daily",
+  "time": "23:00",
+  "format": "pdf",
+  "recipients": [
+    "manager@admin-mart.com",
+    "sales@admin-mart.com"
+  ],
+  "parameters": {
+    "groupBy": "category",
+    "includeCharts": true
+  }
+}
+
+### Create Scheduled Report - Weekly Inventory
+POST {{baseUrl}}/reports/schedule
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "inventory",
+  "title": "Weekly Inventory Report",
+  "schedule": "weekly",
+  "dayOfWeek": "monday",
+  "time": "08:00",
+  "format": "excel",
+  "recipients": [
+    "inventory@admin-mart.com"
+  ],
+  "parameters": {
+    "includeMovements": true,
+    "includeLowStock": true
+  }
+}
+
+### Create Scheduled Report - Monthly Summary
+POST {{baseUrl}}/reports/schedule
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "revenue",
+  "title": "Monthly Revenue Summary",
+  "schedule": "monthly",
+  "dayOfMonth": 1,
+  "time": "09:00",
+  "format": "pdf",
+  "recipients": [
+    "ceo@admin-mart.com",
+    "finance@admin-mart.com"
+  ],
+  "parameters": {
+    "includeComparison": true,
+    "compareWithLastMonth": true,
+    "compareWithLastYear": true
+  }
+}
+
+### Get scheduled reports
+GET {{baseUrl}}/reports/schedule
+Authorization: Bearer {{token}}
+
+### Delete scheduled report
+DELETE {{baseUrl}}/reports/schedule/{{report1Id}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### REPORT ANALYTICS
+### ============================================
+
+### Get report generation statistics
+GET {{baseUrl}}/reports/stats/summary
+Authorization: Bearer {{token}}
+
+### Get most viewed reports
+GET {{baseUrl}}/reports/stats/most-viewed?limit=10
+Authorization: Bearer {{token}}
+
+### Get reports by type count
+GET {{baseUrl}}/reports/stats/by-type
+Authorization: Bearer {{token}}
+
+### ============================================
+### DELETE REPORTS
+### ============================================
+
+### Delete report
+DELETE {{baseUrl}}/reports/{{report1Id}}
+Authorization: Bearer {{token}}
+
+### Bulk delete old reports
+DELETE {{baseUrl}}/reports/bulk?olderThan=2024-12-31
+Authorization: Bearer {{token}}
+
+### ============================================
+### TESTING & VALIDATION
+### ============================================
+
+### Test - Generate report without auth (should fail 401)
+POST {{baseUrl}}/reports
+Content-Type: application/json
+
+{
+  "reportType": "sales",
+  "title": "Test Report"
+}
+
+### Test - Generate report with invalid type (should fail 400)
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "invalid_type",
+  "title": "Invalid Report",
+  "period": {
+    "startDate": "2025-01-01",
+    "endDate": "2025-01-31"
+  }
+}
+
+### Test - Generate report with invalid date range (should fail 400)
+POST {{baseUrl}}/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "sales",
+  "title": "Invalid Date Report",
+  "period": {
+    "startDate": "2025-01-31",
+    "endDate": "2025-01-01"
+  }
+}
+
+### Test - Download non-existent report (should fail 404)
+GET {{baseUrl}}/reports/000000000000000000000000/download
+Authorization: Bearer {{token}}
+
+### ============================================
+### NOTES
+### ============================================
+
+# Report Types:
+# - sales: Sales reports (by product, category, time period)
+# - inventory: Inventory reports (stock levels, movements, valuation)
+# - revenue: Revenue reports (by period, payment method, comparison)
+# - profit: Profit/Loss reports (margin analysis, cost breakdown)
+# - customer: Customer reports (new customers, top customers, segmentation)
+# - product: Product reports (best sellers, slow moving, out of stock)
+# - supplier: Supplier reports (performance, orders, payments)
+#
+# Report Formats:
+# - pdf: PDF document (for printing and sharing)
+# - excel: Excel spreadsheet (for data analysis)
+# - csv: CSV file (for data import/export)
+# - json: JSON format (for API consumption)
+#
+# Report Status:
+# - pending: Report generation in progress
+# - completed: Report ready for download
+# - failed: Report generation failed
+# - scheduled: Scheduled for future generation
+#
+# Auto-Generated Fields:
+# - reportNumber: RPT2025000001 (auto-incremented)
+# - generatedAt: Timestamp when report completed
+# - generatedBy: User who requested the report
+# - fileUrl: URL to download the report file
+#
+# Business Logic:
+# 1. Reports generated asynchronously
+# 2. Large reports may take time to generate
+# 3. Reports stored with expiration date
+# 4. Scheduled reports run automatically
+# 5. Email notifications for scheduled reports
+#
+# Quick Reports:
+# - Pre-defined common reports
+# - Instant generation without storing
+# - Useful for dashboard widgets
+# - No file storage required
+#
+# Scheduled Reports:
+# - Automatically generated at specified time
+# - Sent via email to recipients
+# - Support daily, weekly, monthly schedules
+# - Can be enabled/disabled
+#
+# Parameters:
+# - groupBy: How to group data (product, category, customer, etc.)
+# - includeCharts: Add charts and graphs to report
+# - includeComparison: Compare with previous period
+# - topProductsLimit: Number of top items to include
+# - slowMovingThreshold: Days to consider product slow-moving
+#
+# Integration:
+# - Sales reports from Order model
+# - Inventory reports from Inventory model
+# - Customer reports from Customer model
+# - Supplier reports from Supplier model
+# - Revenue/Profit from Payment model
+#
+# Storage:
+# - Reports stored in cloud storage (AWS S3, Google Cloud Storage)
+# - File URLs expire after certain period
+# - Old reports auto-deleted to save space
+#
+# Security:
+# - Only admin and manager roles can generate reports
+# - Reports contain sensitive business data
+# - Download URLs with authentication token
+# - Audit log for report access

@@ -1,0 +1,470 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+# @baseUrl = https://admin-mart.onrender.com/api
+
+### ============================================
+### AUTHENTICATION (Run this first!)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token
+@token = {{loginResponse.response.body.data.token}}
+@userId = {{loginResponse.response.body.data.user.id}}
+
+### ============================================
+### PRODUCT IDs (Get from create_all_products.rest)
+### ============================================
+@productId1 = 67e3775b81ace97f65644532  # Seeds of Change Organic Quinoa
+@productId2 = 67e3775f81ace97f65644546  # Italian Chicken Meatballs
+@productId3 = 67e3776281ace97f6564455a  # Boomchickapop Sweet & Salty
+
+### ============================================
+### VIEW INVENTORY
+### ============================================
+### NOTE: These endpoints require controller implementation
+### Status: 🟡 Model Ready, Controller Pending
+
+### Get all inventory
+GET {{baseUrl}}/inventory
+Authorization: Bearer {{token}}
+
+### Get inventory with pagination
+GET {{baseUrl}}/inventory?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Get low stock items
+GET {{baseUrl}}/inventory/low-stock
+Authorization: Bearer {{token}}
+
+### Get low stock items with threshold
+GET {{baseUrl}}/inventory/low-stock?threshold=15
+Authorization: Bearer {{token}}
+
+### Get out of stock items
+GET {{baseUrl}}/inventory/out-of-stock
+Authorization: Bearer {{token}}
+
+### Get inventory items needing reorder
+GET {{baseUrl}}/inventory/reorder-needed
+Authorization: Bearer {{token}}
+
+### Sort inventory by available quantity
+GET {{baseUrl}}/inventory?sort=quantityAvailable
+Authorization: Bearer {{token}}
+
+### Sort inventory by stock value (quantity × price)
+GET {{baseUrl}}/inventory?sort=-stockValue
+Authorization: Bearer {{token}}
+
+### Get inventory by product ID
+GET {{baseUrl}}/inventory/product/{{productId1}}
+Authorization: Bearer {{token}}
+
+### Get inventory statistics
+GET {{baseUrl}}/inventory/stats/summary
+Authorization: Bearer {{token}}
+
+### ============================================
+### STOCK MOVEMENTS HISTORY
+### ============================================
+
+### Get stock movements for a product
+GET {{baseUrl}}/inventory/{{productId1}}/movements
+Authorization: Bearer {{token}}
+
+### Get movements with pagination
+GET {{baseUrl}}/inventory/{{productId1}}/movements?page=1&limit=20
+Authorization: Bearer {{token}}
+
+### Filter movements by type
+GET {{baseUrl}}/inventory/{{productId1}}/movements?type=in
+Authorization: Bearer {{token}}
+
+### Filter movements by type - OUT
+GET {{baseUrl}}/inventory/{{productId1}}/movements?type=out
+Authorization: Bearer {{token}}
+
+### Filter movements by type - ADJUSTMENT
+GET {{baseUrl}}/inventory/{{productId1}}/movements?type=adjustment
+Authorization: Bearer {{token}}
+
+### Filter movements by date range
+GET {{baseUrl}}/inventory/{{productId1}}/movements?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{token}}
+
+### Get all movements across all products
+GET {{baseUrl}}/inventory/movements
+Authorization: Bearer {{token}}
+
+### Get movements by user (who performed action)
+GET {{baseUrl}}/inventory/movements?performedBy={{userId}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### MANUAL STOCK ADJUSTMENT
+### ============================================
+
+### Manual Adjustment - Increase Stock
+POST {{baseUrl}}/inventory/adjust
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "type": "adjustment",
+  "quantity": 50,
+  "reason": "Physical count correction - found extra inventory",
+  "notes": "Annual inventory audit adjustment"
+}
+
+### Manual Adjustment - Decrease Stock (Damage)
+POST {{baseUrl}}/inventory/adjust
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId2}}",
+  "type": "adjustment",
+  "quantity": -5,
+  "reason": "Damaged goods",
+  "notes": "Products damaged during transport - items disposed"
+}
+
+### Manual Adjustment - Stock Loss
+POST {{baseUrl}}/inventory/adjust
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId3}}",
+  "type": "adjustment",
+  "quantity": -3,
+  "reason": "Theft/Loss",
+  "notes": "Missing items during inventory check"
+}
+
+### Manual Adjustment - Expired Products
+POST {{baseUrl}}/inventory/adjust
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "type": "adjustment",
+  "quantity": -10,
+  "reason": "Expired products removal",
+  "notes": "Products past expiration date - removed from stock"
+}
+
+### Manual Adjustment - Return from Customer
+POST {{baseUrl}}/inventory/adjust
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId2}}",
+  "type": "in",
+  "quantity": 2,
+  "reason": "Customer return",
+  "referenceType": "return",
+  "referenceId": "RET2025000001",
+  "notes": "Product returned - unused, original packaging"
+}
+
+### ============================================
+### RESERVE STOCK (System Operations)
+### ============================================
+
+### Reserve stock for order (called automatically when order is created)
+POST {{baseUrl}}/inventory/reserve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "quantity": 5,
+  "referenceType": "order",
+  "referenceId": "ORD2025000001",
+  "reason": "Order reservation"
+}
+
+### Release reserved stock (called when order is cancelled)
+POST {{baseUrl}}/inventory/release
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "quantity": 5,
+  "referenceType": "order",
+  "referenceId": "ORD2025000001",
+  "reason": "Order cancelled"
+}
+
+### ============================================
+### STOCK IN (Receiving from Purchase Orders)
+### ============================================
+
+### Stock IN - Receiving from purchase order
+POST {{baseUrl}}/inventory/stock-in
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "quantity": 100,
+  "referenceType": "purchase_order",
+  "referenceId": "PO2025000001",
+  "reason": "Purchase order received",
+  "warehouseLocation": "Warehouse A, Shelf 12, Bin 5",
+  "notes": "Delivery received in good condition"
+}
+
+### Stock IN - Multiple products from same PO
+POST {{baseUrl}}/inventory/stock-in/bulk
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "referenceType": "purchase_order",
+  "referenceId": "PO2025000001",
+  "items": [
+    {
+      "product": "{{productId1}}",
+      "quantity": 100,
+      "warehouseLocation": "Warehouse A, Shelf 12"
+    },
+    {
+      "product": "{{productId2}}",
+      "quantity": 50,
+      "warehouseLocation": "Warehouse A, Shelf 13"
+    }
+  ],
+  "notes": "Bulk receiving from supplier XYZ"
+}
+
+### ============================================
+### STOCK OUT (Sales/Shipments)
+### ============================================
+
+### Stock OUT - Order shipment (called automatically)
+POST {{baseUrl}}/inventory/stock-out
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "quantity": 3,
+  "referenceType": "order",
+  "referenceId": "ORD2025000001",
+  "reason": "Order shipped",
+  "notes": "Shipped to customer"
+}
+
+### ============================================
+### UPDATE INVENTORY SETTINGS
+### ============================================
+
+### Update reorder point and quantity
+PUT {{baseUrl}}/inventory/{{productId1}}/reorder-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reorderPoint": 20,
+  "reorderQuantity": 100
+}
+
+### Update warehouse location
+PUT {{baseUrl}}/inventory/{{productId1}}/location
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "warehouseLocation": "Warehouse B, Zone 2, Shelf 15, Bin 8"
+}
+
+### ============================================
+### INVENTORY REPORTS
+### ============================================
+
+### Get inventory valuation report
+GET {{baseUrl}}/inventory/reports/valuation
+Authorization: Bearer {{token}}
+
+### Get inventory turnover report
+GET {{baseUrl}}/inventory/reports/turnover?period=month
+Authorization: Bearer {{token}}
+
+### Get stock movement summary
+GET {{baseUrl}}/inventory/reports/movements-summary?startDate=2025-01-01&endDate=2025-01-31
+Authorization: Bearer {{token}}
+
+### Get slow-moving items report
+GET {{baseUrl}}/inventory/reports/slow-moving?days=90
+Authorization: Bearer {{token}}
+
+### Get fast-moving items report
+GET {{baseUrl}}/inventory/reports/fast-moving?days=30&limit=20
+Authorization: Bearer {{token}}
+
+### Get stock aging report
+GET {{baseUrl}}/inventory/reports/aging
+Authorization: Bearer {{token}}
+
+### ============================================
+### INVENTORY ALERTS
+### ============================================
+
+### Get all active alerts
+# @name alertsResponse
+GET {{baseUrl}}/inventory/alerts
+Authorization: Bearer {{token}}
+
+@alertId = {{alertsResponse.response.body.data.alerts[0]._id}}
+
+### Get low stock alerts
+GET {{baseUrl}}/inventory/alerts?type=low_stock
+Authorization: Bearer {{token}}
+
+### Get out of stock alerts
+GET {{baseUrl}}/inventory/alerts?type=out_of_stock
+Authorization: Bearer {{token}}
+
+### Get reorder alerts
+GET {{baseUrl}}/inventory/alerts?type=reorder_needed
+Authorization: Bearer {{token}}
+
+### Mark alert as acknowledged
+PATCH {{baseUrl}}/inventory/alerts/{{alertId}}/acknowledge
+Authorization: Bearer {{token}}
+
+### ============================================
+### STOCK RECONCILIATION
+### ============================================
+
+### Start stock reconciliation
+POST {{baseUrl}}/inventory/reconciliation/start
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Monthly inventory audit",
+  "notes": "Full warehouse count"
+}
+
+### Record physical count
+POST {{baseUrl}}/inventory/reconciliation/count
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "physicalCount": 48,
+  "notes": "Counted by John Doe"
+}
+
+### Complete reconciliation and adjust
+POST {{baseUrl}}/inventory/reconciliation/complete
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Monthly audit completed - discrepancies adjusted"
+}
+
+### ============================================
+### TESTING & VALIDATION
+### ============================================
+
+### Test - Adjust inventory without auth (should fail 401)
+POST {{baseUrl}}/inventory/adjust
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "quantity": 10
+}
+
+### Test - Adjust with invalid product ID (should fail 404)
+POST {{baseUrl}}/inventory/adjust
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "000000000000000000000000",
+  "quantity": 10,
+  "reason": "Test"
+}
+
+### Test - Adjust with zero quantity (should fail 400)
+POST {{baseUrl}}/inventory/adjust
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "quantity": 0,
+  "reason": "Test"
+}
+
+### Test - Decrease stock below zero (should fail 400)
+POST {{baseUrl}}/inventory/adjust
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product": "{{productId1}}",
+  "quantity": -10000,
+  "reason": "Test"
+}
+
+### ============================================
+### NOTES
+### ============================================
+
+# Inventory Model Fields:
+# - quantityOnHand: Total physical stock
+# - quantityReserved: Stock reserved for pending orders
+# - quantityAvailable: onHand - reserved (calculated automatically)
+# - reorderPoint: Minimum quantity before reorder alert
+# - reorderQuantity: Suggested quantity to reorder
+#
+# Movement Types:
+# - in: Stock increase (purchase, return)
+# - out: Stock decrease (sale, damage)
+# - adjustment: Manual correction
+# - reserved: Reserved for order
+# - released: Reservation released
+#
+# Reference Types:
+# - order: Sales order
+# - purchase_order: Purchase order from supplier
+# - adjustment: Manual adjustment
+# - return: Customer return
+#
+# Auto-Stock Management:
+# 1. Order Created → Reserve stock (quantityReserved +)
+# 2. Order Shipped → Stock out (quantityOnHand -, quantityReserved -)
+# 3. Order Cancelled → Release stock (quantityReserved -)
+# 4. PO Received → Stock in (quantityOnHand +)
+#
+# Alerts:
+# - Low Stock: quantityAvailable < reorderPoint
+# - Out of Stock: quantityAvailable = 0
+# - Reorder Needed: quantityAvailable ≤ reorderPoint
+#
+# Best Practices:
+# - Always provide reason for adjustments
+# - Use warehouse location for large warehouses
+# - Regular reconciliation (monthly/quarterly)
+# - Track who performed each movement

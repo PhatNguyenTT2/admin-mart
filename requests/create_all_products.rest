@@ -24,14 +24,14 @@ Content-Type: application/json
 ### ============================================
 ### Run categories.rest first, then copy IDs here!
 
-@bakingMaterialId = 68e3775b81ace97f65644531
-@meatsId = 68e3775f81ace97f65644545
+@bakingMaterialId = 68e412466a00f32e003175e3
+@meatsId = 68e412596a00f32e003175ea
 
-@milksDairiesId = 68e3776281ace97f65644559
+@milksDairiesId = 68e412646a00f32e003175f1
 
-@vegetablesId = 68e3776681ace97f6564456d
+@vegetablesId = 68e4126e6a00f32e003175f8
 
-@freshFruitsId = 68e3776a81ace97f65644581
+@freshFruitsId = 68e412756a00f32e003175ff
 
 ### ============================================
 ### CREATE 15 PRODUCTS FROM MOCK DATA
