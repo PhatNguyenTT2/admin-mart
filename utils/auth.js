@@ -36,7 +36,8 @@ const userExtractor = async (request, response, next) => {
     }
 
     // Find user and verify token exists in user's tokens array
-    const user = await User.findById(decodedToken.id)
+    // Populate role to have access to roleId
+    const user = await User.findById(decodedToken.id).populate('role')
 
     if (!user) {
       return response.status(401).json({
@@ -76,20 +77,32 @@ const userExtractor = async (request, response, next) => {
 }
 
 // Middleware: Check if user is admin
-const isAdmin = (request, response, next) => {
+const isAdmin = async (request, response, next) => {
   if (!request.user) {
     return response.status(401).json({
       error: 'Authentication required'
     })
   }
 
-  if (request.user.role !== 'admin') {
-    return response.status(403).json({
-      error: 'Admin access required'
+  try {
+    // Populate role if it's not already populated
+    if (!request.user.role.roleId) {
+      await request.user.populate('role')
+    }
+
+    // Check if user has ADMIN role
+    if (!request.user.role || request.user.role.roleId !== 'ADMIN') {
+      return response.status(403).json({
+        error: 'Admin access required'
+      })
+    }
+
+    next()
+  } catch (error) {
+    return response.status(500).json({
+      error: 'Error checking admin access'
     })
   }
-
-  next()
 }
 
 module.exports = {

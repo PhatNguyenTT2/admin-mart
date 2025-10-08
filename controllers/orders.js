@@ -90,7 +90,8 @@ ordersRouter.get('/:id', userExtractor, async (request, response) => {
     }
 
     // Check access: Admin can see all, users can only see their own
-    if (request.user.role !== 'admin' &&
+    const isAdmin = request.user.role && request.user.role.roleId === 'ADMIN'
+    if (!isAdmin &&
       (!order.user || order.user._id.toString() !== request.user._id.toString())) {
       return response.status(403).json({
         error: 'Access denied'

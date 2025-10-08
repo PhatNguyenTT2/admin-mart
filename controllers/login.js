@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const loginRouter = require('express').Router()
 const User = require('../models/user')
+const Role = require('../models/role')
 const { userExtractor } = require('../utils/auth')
 
 // Helper: Generate JWT token
@@ -25,8 +26,8 @@ loginRouter.post('/', async (request, response) => {
   }
 
   try {
-    // Find user
-    const user = await User.findOne({ username })
+    // Find user and populate role
+    const user = await User.findOne({ username }).populate('role', 'roleId roleName')
 
     if (!user) {
       return response.status(401).json({
@@ -73,8 +74,10 @@ loginRouter.post('/', async (request, response) => {
       }
     })
   } catch (error) {
+    console.error('Login error:', error)
     response.status(500).json({
-      error: 'Something went wrong during login'
+      error: 'Something went wrong during login',
+      details: error.message
     })
   }
 })
@@ -117,13 +120,21 @@ loginRouter.post('/register', async (request, response) => {
     const saltRounds = 10
     const passwordHash = await bcrypt.hash(password, saltRounds)
 
+    // Find the ADMIN role
+    const adminRole = await Role.findOne({ roleId: 'ADMIN' })
+    if (!adminRole) {
+      return response.status(500).json({
+        error: 'Admin role not found. Please run setup script first.'
+      })
+    }
+
     // Create new user
     const user = new User({
       username,
       email,
       fullName,
       passwordHash,
-      role: 'admin', // Default role for admin dashboard
+      role: adminRole._id, // Use ObjectId reference to Role
       isActive: true
     })
 
@@ -144,13 +155,15 @@ loginRouter.post('/register', async (request, response) => {
       }
     })
   } catch (error) {
+    console.error('Registration error:', error)
     if (error.name === 'ValidationError') {
       return response.status(400).json({
         error: error.message
       })
     }
     response.status(500).json({
-      error: 'Something went wrong during registration'
+      error: 'Something went wrong during registration',
+      details: error.message
     })
   }
 })
