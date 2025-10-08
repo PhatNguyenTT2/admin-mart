@@ -10,7 +10,11 @@
     "build:ui": "rm -rf dist && cd ../admin && npm run build && cp -r dist ../backend/dist",
     "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
     "lint": "eslint .",
-    "start:test": "cross-env NODE_ENV=test node --watch index.js"
+    "start:test": "cross-env NODE_ENV=test node --watch index.js",
+    "setup": "node utils/completeSetup.js",
+    "seed:roles": "node utils/seedRolesAndDepartments.js",
+    "seed:admin": "node utils/seedAdmin.js",
+    "migrate:users": "node utils/migrateUsersRole.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

@@ -43,19 +43,23 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/users?page=1&per_page=10
 Authorization: Bearer {{token}}
 
-### 3. Filter Users by Role
-GET {{baseUrl}}/users?role=admin
+### 3. Filter Users by Role (replace with actual Role ID)
+GET {{baseUrl}}/users?role=67654a6f8e123456789abcde
 Authorization: Bearer {{token}}
 
-### 4. Filter Active Users
+### 4. Filter Users by Department (replace with actual Department ID)
+GET {{baseUrl}}/users?department=67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+
+### 5. Filter Active Users
 GET {{baseUrl}}/users?is_active=true
 Authorization: Bearer {{token}}
 
-### 5. Get User by ID
+### 6. Get User by ID
 GET {{baseUrl}}/users/{{userId}}
 Authorization: Bearer {{token}}
 
-### 6. Create User (Admin Only)
+### 7. Create User (Admin Only) - Replace role and department IDs
 # @name createUser
 POST {{baseUrl}}/users
 Authorization: Bearer {{token}}
@@ -66,10 +70,11 @@ Content-Type: application/json
   "email": "employee1@example.com",
   "fullName": "Employee One",
   "password": "employee123",
-  "role": "employee"
+  "role": "67654a6f8e123456789abcde",
+  "department": "67654a6f8e123456789abcdf"
 }
 
-### 7. Create Another User
+### 8. Create User without Department (Optional field)
 POST {{baseUrl}}/users
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -79,10 +84,10 @@ Content-Type: application/json
   "email": "testuser@example.com",
   "fullName": "Test User",
   "password": "test123",
-  "role": "user"
+  "role": "67654a6f8e123456789abcde"
 }
 
-### 8. Update User - Self
+### 9. Update User - Self (email and fullName)
 PUT {{baseUrl}}/users/{{userId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -92,7 +97,7 @@ Content-Type: application/json
   "fullName": "Updated Full Name"
 }
 
-### 9. Update User - Change Password
+### 10. Update User - Change Password
 PUT {{baseUrl}}/users/{{userId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -101,16 +106,46 @@ Content-Type: application/json
   "password": "newpassword123"
 }
 
-### 10. Update User Role (Admin Only)
+### 11. Update User - Admin can change role and department (replace IDs)
+PUT {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "updated@example.com",
+  "fullName": "Updated Name",
+  "role": "67654a6f8e123456789abcde",
+  "department": "67654a6f8e123456789abcdf"
+}
+
+### 12. Update User Role (Admin Only) - Replace with actual Role ID
 PATCH {{baseUrl}}/users/{{userId}}/role
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "role": "employee"
+  "role": "67654a6f8e123456789abcde"
 }
 
-### 11. Deactivate User (Admin Only)
+### 13. Update User Department (Admin Only) - Replace with actual Department ID
+PATCH {{baseUrl}}/users/{{userId}}/department
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "department": "67654a6f8e123456789abcdf"
+}
+
+### 14. Remove User from Department (Admin Only)
+PATCH {{baseUrl}}/users/{{userId}}/department
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "department": null
+}
+
+### 15. Deactivate User (Admin Only)
 PATCH {{baseUrl}}/users/{{userId}}/status
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -119,7 +154,7 @@ Content-Type: application/json
   "isActive": false
 }
 
-### 12. Activate User (Admin Only)
+### 16. Activate User (Admin Only)
 PATCH {{baseUrl}}/users/{{userId}}/status
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -128,11 +163,15 @@ Content-Type: application/json
   "isActive": true
 }
 
-### 13. Delete User (Admin Only)
+### 17. Delete User (Admin Only)
 DELETE {{baseUrl}}/users/{{userId}}
 Authorization: Bearer {{token}}
 
-### 14. Create User - Missing Fields (400 Test)
+### ============================================
+### ERROR TEST CASES
+### ============================================
+
+### 18. Create User - Missing Required Fields (should fail)
 POST {{baseUrl}}/users
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -141,7 +180,19 @@ Content-Type: application/json
   "username": "incomplete"
 }
 
-### 15. Create User - Duplicate Username (400 Test)
+### 19. Create User - Missing Role (should fail - role is now required)
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "norole",
+  "email": "norole@example.com",
+  "fullName": "No Role User",
+  "password": "test123"
+}
+
+### 20. Create User - Duplicate Username (should fail)
 POST {{baseUrl}}/users
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -150,5 +201,65 @@ Content-Type: application/json
   "username": "admin",
   "email": "duplicate@example.com",
   "fullName": "Duplicate User",
-  "password": "test123"
+  "password": "test123",
+  "role": "67654a6f8e123456789abcde"
 }
+
+### 21. Create User - Invalid Role ID (should fail)
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "invalidrole",
+  "email": "invalidrole@example.com",
+  "fullName": "Invalid Role User",
+  "password": "test123",
+  "role": "invalid-role-id"
+}
+
+### 22. Create User - Invalid Department ID (should fail)
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "invaliddept",
+  "email": "invaliddept@example.com",
+  "fullName": "Invalid Dept User",
+  "password": "test123",
+  "role": "67654a6f8e123456789abcde",
+  "department": "invalid-dept-id"
+}
+
+### 23. Update Role with Invalid ID (should fail)
+PATCH {{baseUrl}}/users/{{userId}}/role
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role": "invalid-role-id"
+}
+
+### 24. Update Department with Invalid ID (should fail)
+PATCH {{baseUrl}}/users/{{userId}}/department
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "department": "invalid-dept-id"
+}
+
+### ============================================
+### NOTES
+### ============================================
+# Important: Role is now REQUIRED when creating users
+# Role and Department must be valid ObjectId references
+# Replace placeholder IDs (67654a6f8e123456789abcde) with actual IDs from your database
+# To get actual IDs:
+#   1. First create roles using roles.rest
+#   2. Then create departments using departments.rest
+#   3. Use the returned IDs in user creation
+# Department is optional but if provided must be valid
+# Only Admin can update user's role and department
+# Users can update their own email, fullName, and password

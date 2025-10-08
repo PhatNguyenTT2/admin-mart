@@ -1,0 +1,264 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+
+### ============================================
+### AUTHENTICATION (Run this first to get token)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token from login response
+@token = {{loginResponse.response.body.data.token}}
+
+### ============================================
+### DEPARTMENTS - GET Operations
+### ============================================
+
+### 1. Get All Departments
+GET {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+
+### 2. Get Departments with Pagination
+GET {{baseUrl}}/departments?page=1&per_page=10
+Authorization: Bearer {{token}}
+
+### 3. Filter Active Departments
+GET {{baseUrl}}/departments?is_active=true
+Authorization: Bearer {{token}}
+
+### 4. Get Single Department by ID (replace with actual ID)
+# @name getDepartmentResponse
+GET {{baseUrl}}/departments/67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+
+### 5. Get Department by Department Code
+GET {{baseUrl}}/departments/code/IT
+Authorization: Bearer {{token}}
+
+### 6. Get Users in Department (replace with actual ID)
+GET {{baseUrl}}/departments/67654a6f8e123456789abcde/users
+Authorization: Bearer {{token}}
+
+### 7. Get Users in Department with Pagination
+GET {{baseUrl}}/departments/67654a6f8e123456789abcde/users?page=1&per_page=10
+Authorization: Bearer {{token}}
+
+### ============================================
+### DEPARTMENTS - POST Operations (Admin Only)
+### ============================================
+
+### 8. Create New Department - IT
+# @name createITDepartment
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "IT",
+  "departmentName": "Information Technology",
+  "description": "Responsible for IT infrastructure, software development, and technical support",
+  "location": "Floor 3, Building A",
+  "phone": "0123456789",
+  "email": "it@company.com",
+  "isActive": true
+}
+
+### 9. Create New Department - HR
+# @name createHRDepartment
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "HR",
+  "departmentName": "Human Resources",
+  "description": "Manages recruitment, employee relations, and organizational development",
+  "location": "Floor 2, Building A",
+  "phone": "0123456790",
+  "email": "hr@company.com",
+  "isActive": true
+}
+
+### 10. Create New Department - Sales
+# @name createSalesDepartment
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "SALES",
+  "departmentName": "Sales Department",
+  "description": "Handles customer relations and sales operations",
+  "location": "Floor 1, Building B",
+  "phone": "0123456791",
+  "email": "sales@company.com",
+  "isActive": true
+}
+
+### 11. Create New Department - Finance
+# @name createFinanceDepartment
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "FIN",
+  "departmentName": "Finance",
+  "description": "Manages financial planning, budgeting, and accounting",
+  "location": "Floor 2, Building B",
+  "phone": "0123456792",
+  "email": "finance@company.com",
+  "isActive": true
+}
+
+### 12. Create Department with Manager (replace manager ID)
+# @name createDepartmentWithManager
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "OPS",
+  "departmentName": "Operations",
+  "description": "Oversees daily operations and logistics",
+  "manager": "67654a6f8e123456789abcde",
+  "location": "Floor 1, Building A",
+  "phone": "0123456793",
+  "email": "operations@company.com",
+  "isActive": true
+}
+
+### ============================================
+### DEPARTMENTS - PUT Operations (Admin Only)
+### ============================================
+
+### 13. Update Department (replace with actual ID)
+PUT {{baseUrl}}/departments/67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentName": "Information Technology - Updated",
+  "description": "Updated description: Responsible for IT infrastructure, software development, cybersecurity, and technical support",
+  "location": "Floor 4, Building A",
+  "phone": "0123456799",
+  "email": "it.updated@company.com",
+  "isActive": true
+}
+
+### 14. Update Department Manager (replace with actual IDs)
+PUT {{baseUrl}}/departments/67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "manager": "67654a6f8e123456789abcdf"
+}
+
+### 15. Remove Department Manager (replace with actual ID)
+PUT {{baseUrl}}/departments/67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "manager": null
+}
+
+### ============================================
+### DEPARTMENTS - PATCH Operations (Admin Only)
+### ============================================
+
+### 16. Toggle Department Active Status (replace with actual ID)
+PATCH {{baseUrl}}/departments/67654a6f8e123456789abcde/toggle
+Authorization: Bearer {{token}}
+
+### ============================================
+### DEPARTMENTS - DELETE Operations (Admin Only)
+### ============================================
+
+### 17. Delete Department (replace with actual ID)
+# WARNING: Cannot delete if department has users
+DELETE {{baseUrl}}/departments/67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+
+### ============================================
+### ERROR TEST CASES
+### ============================================
+
+### 18. Create Department with Duplicate ID (should fail)
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "IT",
+  "departmentName": "Duplicate IT Department"
+}
+
+### 19. Create Department without Required Fields (should fail)
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Missing required fields"
+}
+
+### 20. Create Department with Invalid Manager ID (should fail)
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "TEST",
+  "departmentName": "Test Department",
+  "manager": "invalid-user-id"
+}
+
+### 21. Get Department with Invalid ID (should fail)
+GET {{baseUrl}}/departments/invalid-id
+Authorization: Bearer {{token}}
+
+### 22. Access without Token (should fail)
+GET {{baseUrl}}/departments
+
+### 23. Create Department with Invalid Phone Format (should fail)
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "TEST2",
+  "departmentName": "Test Department",
+  "phone": "123"
+}
+
+### 24. Create Department with Invalid Email Format (should fail)
+POST {{baseUrl}}/departments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "departmentId": "TEST3",
+  "departmentName": "Test Department",
+  "email": "invalid-email"
+}
+
+### ============================================
+### NOTES
+### ============================================
+# Replace placeholder IDs (67654a6f8e123456789abcde) with actual IDs from your database
+# Make sure to run the Login request first to get a valid token
+# All POST, PUT, PATCH, DELETE operations require Admin role
+# GET operations require authentication but any role can access
+# Phone number must be 10-15 digits
+# Email must be in valid format
+# Department cannot be deleted if it has users assigned to it

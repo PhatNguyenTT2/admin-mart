@@ -1,16 +1,19 @@
 const usersRouter = require('express').Router()
 const bcrypt = require('bcrypt')
 const User = require('../models/user')
+const Role = require('../models/role')
+const Department = require('../models/department')
 const { userExtractor, isAdmin } = require('../utils/auth')
 
 // GET /api/users - Get all users (Admin only)
 usersRouter.get('/', userExtractor, isAdmin, async (request, response) => {
   try {
-    const { page = 1, per_page = 20, role, is_active } = request.query
+    const { page = 1, per_page = 20, role, department, is_active } = request.query
 
     // Build filter
     const filter = {}
     if (role) filter.role = role
+    if (department) filter.department = department
     if (is_active !== undefined) filter.isActive = is_active === 'true'
 
     // Pagination
@@ -19,6 +22,8 @@ usersRouter.get('/', userExtractor, isAdmin, async (request, response) => {
     const skip = (pageNum - 1) * perPage
 
     const users = await User.find(filter)
+      .populate('role', 'roleId roleName')
+      .populate('department', 'departmentId departmentName')
       .select('-passwordHash -tokens')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -52,6 +57,8 @@ usersRouter.get('/', userExtractor, isAdmin, async (request, response) => {
 usersRouter.get('/:id', userExtractor, async (request, response) => {
   try {
     const user = await User.findById(request.params.id)
+      .populate('role', 'roleId roleName permissions')
+      .populate('department', 'departmentId departmentName location')
       .select('-passwordHash -tokens')
 
     if (!user) {
@@ -61,7 +68,8 @@ usersRouter.get('/:id', userExtractor, async (request, response) => {
     }
 
     // Check access: Admin can see all, users can only see themselves
-    if (request.user.role !== 'admin' &&
+    const userRole = await Role.findById(request.user.role)
+    if (userRole?.roleId !== 'ADMIN' &&
       request.user._id.toString() !== user._id.toString()) {
       return response.status(403).json({
         error: 'Access denied'
@@ -86,12 +94,12 @@ usersRouter.get('/:id', userExtractor, async (request, response) => {
 
 // POST /api/users - Create new user (Admin only)
 usersRouter.post('/', userExtractor, isAdmin, async (request, response) => {
-  const { username, email, fullName, password, role } = request.body
+  const { username, email, fullName, password, role, department } = request.body
 
   // Validation
-  if (!username || !email || !fullName || !password) {
+  if (!username || !email || !fullName || !password || !role) {
     return response.status(400).json({
-      error: 'All fields are required (username, email, fullName, password)'
+      error: 'All fields are required (username, email, fullName, password, role)'
     })
   }
 
@@ -118,6 +126,24 @@ usersRouter.post('/', userExtractor, isAdmin, async (request, response) => {
       })
     }
 
+    // Validate role exists
+    const roleExists = await Role.findById(role)
+    if (!roleExists) {
+      return response.status(400).json({
+        error: 'Invalid role ID'
+      })
+    }
+
+    // Validate department if provided
+    if (department) {
+      const departmentExists = await Department.findById(department)
+      if (!departmentExists) {
+        return response.status(400).json({
+          error: 'Invalid department ID'
+        })
+      }
+    }
+
     // Hash password
     const saltRounds = 10
     const passwordHash = await bcrypt.hash(password, saltRounds)
@@ -128,25 +154,23 @@ usersRouter.post('/', userExtractor, isAdmin, async (request, response) => {
       email,
       fullName,
       passwordHash,
-      role: role || 'admin',
+      role,
+      department,
       isActive: true
     })
 
     const savedUser = await user.save()
 
+    // Populate role and department for response
+    const populatedUser = await User.findById(savedUser._id)
+      .populate('role', 'roleId roleName')
+      .populate('department', 'departmentId departmentName')
+      .select('-passwordHash -tokens')
+
     response.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: {
-        user: {
-          id: savedUser._id,
-          username: savedUser.username,
-          email: savedUser.email,
-          fullName: savedUser.fullName,
-          role: savedUser.role,
-          isActive: savedUser.isActive
-        }
-      }
+      data: { user: populatedUser }
     })
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -162,7 +186,7 @@ usersRouter.post('/', userExtractor, isAdmin, async (request, response) => {
 
 // PUT /api/users/:id - Update user (Admin or self)
 usersRouter.put('/:id', userExtractor, async (request, response) => {
-  const { email, fullName, password } = request.body
+  const { email, fullName, password, role, department } = request.body
 
   try {
     const user = await User.findById(request.params.id)
@@ -174,8 +198,11 @@ usersRouter.put('/:id', userExtractor, async (request, response) => {
     }
 
     // Check access: Admin can update anyone, users can only update themselves
-    if (request.user.role !== 'admin' &&
-      request.user._id.toString() !== user._id.toString()) {
+    const userRole = await Role.findById(request.user.role)
+    const isAdmin = userRole?.roleId === 'ADMIN'
+    const isSelf = request.user._id.toString() === user._id.toString()
+
+    if (!isAdmin && !isSelf) {
       return response.status(403).json({
         error: 'Access denied'
       })
@@ -198,6 +225,29 @@ usersRouter.put('/:id', userExtractor, async (request, response) => {
 
     if (fullName) user.fullName = fullName
 
+    // Only admin can update role and department
+    if (role && isAdmin) {
+      const roleExists = await Role.findById(role)
+      if (!roleExists) {
+        return response.status(400).json({
+          error: 'Invalid role ID'
+        })
+      }
+      user.role = role
+    }
+
+    if (department !== undefined && isAdmin) {
+      if (department) {
+        const departmentExists = await Department.findById(department)
+        if (!departmentExists) {
+          return response.status(400).json({
+            error: 'Invalid department ID'
+          })
+        }
+      }
+      user.department = department
+    }
+
     if (password) {
       if (password.length < 6) {
         return response.status(400).json({
@@ -212,19 +262,15 @@ usersRouter.put('/:id', userExtractor, async (request, response) => {
 
     await user.save()
 
+    const updatedUser = await User.findById(user._id)
+      .populate('role', 'roleId roleName')
+      .populate('department', 'departmentId departmentName')
+      .select('-passwordHash -tokens')
+
     response.status(200).json({
       success: true,
       message: 'User updated successfully',
-      data: {
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          isActive: user.isActive
-        }
-      }
+      data: { user: updatedUser }
     })
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -242,20 +288,29 @@ usersRouter.put('/:id', userExtractor, async (request, response) => {
 usersRouter.patch('/:id/role', userExtractor, isAdmin, async (request, response) => {
   const { role } = request.body
 
-  const validRoles = ['admin', 'user', 'employee']
-
-  if (!role || !validRoles.includes(role)) {
+  if (!role) {
     return response.status(400).json({
-      error: `Invalid role. Must be one of: ${validRoles.join(', ')}`
+      error: 'Role ID is required'
     })
   }
 
   try {
+    // Validate role exists
+    const roleExists = await Role.findById(role)
+    if (!roleExists) {
+      return response.status(400).json({
+        error: 'Invalid role ID'
+      })
+    }
+
     const user = await User.findByIdAndUpdate(
       request.params.id,
       { role },
       { new: true }
-    ).select('-passwordHash -tokens')
+    )
+      .populate('role', 'roleId roleName')
+      .populate('department', 'departmentId departmentName')
+      .select('-passwordHash -tokens')
 
     if (!user) {
       return response.status(404).json({
@@ -269,6 +324,11 @@ usersRouter.patch('/:id/role', userExtractor, isAdmin, async (request, response)
       data: { user }
     })
   } catch (error) {
+    if (error.name === 'CastError') {
+      return response.status(400).json({
+        error: 'Invalid ID format'
+      })
+    }
     response.status(500).json({
       error: 'Failed to update user role'
     })
@@ -308,23 +368,66 @@ usersRouter.patch('/:id/status', userExtractor, isAdmin, async (request, respons
     }
     await user.save()
 
+    const updatedUser = await User.findById(user._id)
+      .populate('role', 'roleId roleName')
+      .populate('department', 'departmentId departmentName')
+      .select('-passwordHash -tokens')
+
     response.status(200).json({
       success: true,
       message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
-      data: {
-        user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          isActive: user.isActive
-        }
-      }
+      data: { user: updatedUser }
     })
   } catch (error) {
     response.status(500).json({
       error: 'Failed to update user status'
+    })
+  }
+})
+
+// PATCH /api/users/:id/department - Update user department (Admin only)
+usersRouter.patch('/:id/department', userExtractor, isAdmin, async (request, response) => {
+  const { department } = request.body
+
+  try {
+    // Validate department if provided
+    if (department) {
+      const departmentExists = await Department.findById(department)
+      if (!departmentExists) {
+        return response.status(400).json({
+          error: 'Invalid department ID'
+        })
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      request.params.id,
+      { department },
+      { new: true }
+    )
+      .populate('role', 'roleId roleName')
+      .populate('department', 'departmentId departmentName')
+      .select('-passwordHash -tokens')
+
+    if (!user) {
+      return response.status(404).json({
+        error: 'User not found'
+      })
+    }
+
+    response.status(200).json({
+      success: true,
+      message: 'User department updated successfully',
+      data: { user }
+    })
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return response.status(400).json({
+        error: 'Invalid ID format'
+      })
+    }
+    response.status(500).json({
+      error: 'Failed to update user department'
     })
   }
 })

@@ -29,12 +29,17 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
-  // Role & Status
+  // Role & Department References
   role: {
-    type: String,
-    enum: ['admin', 'user', 'employee'],
-    default: 'admin'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+    required: [true, 'Role is required']
   },
+  department: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department'
+  },
+  // Status
   isActive: {
     type: Boolean,
     default: true

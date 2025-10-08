@@ -1,79 +1,90 @@
-# 🛒 Mini Store - Backend API
+# 🛍️ Mini Store Backend
 
-> Node.js + Express + MongoDB backend for Mini Store E-commerce Admin Dashboard  
-> Complete business management system with inventory, procurement, and analytics
+> A comprehensive RESTful API backend for e-commerce management system built with Node.js, Express, and MongoDB
 
-[![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Express-5.1.0-blue.svg)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-8.x-green.svg)](https://www.mongodb.com/)
-[![Mongoose](https://img.shields.io/badge/Mongoose-8.18.3-red.svg)](https://mongoosejs.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-v20+-green.svg)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-v5.1.0-blue.svg)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-v8.18.3-green.svg)](https://www.mongodb.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Database Models](#database-models)
-- [Implementation Status](#implementation-status)
-- [Getting Started](#getting-started)
-- [API Endpoints](#api-endpoints)
-- [Authentication](#authentication)
-- [Development Roadmap](#development-roadmap)
-- [Testing](#testing)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [API Documentation](#-api-documentation)
+- [Database Models](#-database-models)
+- [Authentication & Authorization](#-authentication--authorization)
+- [Setup & Migration](#-setup--migration)
+- [Scripts](#-scripts)
+- [Environment Variables](#-environment-variables)
+- [Contributing](#-contributing)
 
 ---
 
-## 🎯 Overview
+## ✨ Features
 
-**Mini Store Backend** is a comprehensive REST API system for e-commerce business management. It goes beyond basic product/order handling to include **inventory tracking**, **supplier management**, **procurement**, **payment processing**, and **business analytics**.
+### 🔐 User Management
+- Multi-role authentication system (Admin, Manager, Employee, Customer)
+- Department-based user organization
+- JWT token-based authentication
+- Password hashing with bcrypt
+- Role-based access control (RBAC)
 
-### System Modules
+### 📦 Product Management
+- Complete CRUD operations
+- Category management
+- Image upload support
+- Stock tracking
+- Search and filtering
 
-#### ✅ **Core E-commerce** (Implemented)
-- **JWT Authentication** - Secure login/register with role-based access
-- **User Management** - Admin, employee, user roles
-- **Product Catalog** - Full CRUD with filtering, search, pagination
-- **Category Management** - Hierarchical categories
-- **Order Processing** - Complete order lifecycle with status tracking
-- **Shopping Cart** - Cart operations with stock validation
+### 🛒 Order Management
+- Order creation and tracking
+- Order status management
+- Customer order history
+- Payment integration
 
-#### 🟡 **Business Operations** (Models Ready, Controllers Pending)
-- **Customer Management (CRM)** - Customer profiles, purchase history, loyalty
-- **Inventory System** - Real-time stock tracking, movement history, reorder alerts
-- **Payment Processing** - Transaction tracking, multiple payment methods, refunds
-- **Procurement (B2B)** - Purchase orders, supplier orders, approval workflow
-- **Supplier Management** - Vendor database, payment terms, performance tracking
-- **Business Intelligence** - Sales reports, revenue analytics, inventory reports
+### 👥 Customer Management
+- Customer profiles
+- Order history
+- Contact information
 
-### Key Features
+### 🏢 Supplier & Purchase Orders
+- Supplier management
+- Purchase order tracking
+- Inventory restocking
 
-- 🔐 **JWT Authentication** - Token-based secure authentication
-- 👥 **Role-Based Access Control** - Admin, Employee, User permissions
-- 📦 **Advanced Inventory** - Stock tracking, movements, reorder points
-- 💰 **Financial Management** - Payments, refunds, supplier payments
-- 📊 **Business Analytics** - Revenue, profit, customer insights
-- 🔄 **Procurement Workflow** - PO creation, approval, receiving
-- 🏢 **B2B Support** - Supplier management, purchase orders
-- 📈 **Reporting System** - Customizable reports, multiple formats
-- ⚡ **Performance** - Indexed queries, pagination, caching
-- 🛡️ **Error Handling** - Comprehensive error responses
+### 💰 Payment & Inventory
+- Payment processing
+- Payment history
+- Real-time inventory tracking
+- Stock alerts
+
+### 📊 Reports & Analytics
+- Sales reports
+- Inventory reports
+- Custom report generation
+
+### 🏛️ Organization Management
+- **Role Management**: Define and manage user roles with custom permissions
+- **Department Management**: Organize users into departments with managers
+- Hierarchical access control
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Node.js** | 20.x | Runtime environment |
-| **Express.js** | 5.1.0 | Web framework |
-| **MongoDB** | 8.x | Database |
-| **Mongoose** | 8.18.3 | ODM for MongoDB |
-| **JWT** | 9.0.2 | Authentication tokens |
-| **bcrypt** | 5.1.1 | Password hashing |
-| **dotenv** | 17.2.3 | Environment variables |
-| **Morgan** | 1.10.1 | HTTP request logger |
+- **Runtime**: Node.js v20+
+- **Framework**: Express.js v5.1.0
+- **Database**: MongoDB v8.18.3 with Mongoose ODM
+- **Authentication**: JWT (JSON Web Tokens)
+- **Password Hashing**: bcrypt
+- **Logging**: Morgan & Custom Logger
+- **Environment**: dotenv
+- **Code Quality**: ESLint
 
 ---
 
@@ -81,1096 +92,605 @@
 
 ```
 backend/
-├── controllers/              # Route handlers & business logic
-│   ├── login.js             # ✅ Authentication endpoints
-│   ├── users.js             # ✅ User management
-│   ├── products.js          # ✅ Product CRUD + filters
-│   ├── categories.js        # ✅ Category management
-│   ├── orders.js            # ✅ Order processing
-│   ├── customers.js         # 🟡 Customer CRM (pending implementation)
-│   ├── inventory.js         # 🟡 Stock tracking (pending implementation)
-│   ├── payments.js          # 🟡 Payment processing (pending implementation)
-│   ├── purchaseOrders.js    # 🟡 Procurement (pending implementation)
-│   ├── suppliers.js         # 🟡 Supplier management (pending implementation)
-│   └── reports.js           # 🟡 Analytics (pending implementation)
-├── models/                  # Mongoose schemas (10 models)
-│   ├── user.js             # ✅ User authentication & management
-│   ├── product.js          # ✅ Product catalog
-│   ├── category.js         # ✅ Product categories
-│   ├── order.js            # ✅ Customer sales orders
-│   ├── customer.js         # 🟡 Customer profiles (B2C)
-│   ├── inventory.js        # 🟡 Stock tracking & movements
-│   ├── payment.js          # 🟡 Payment transactions
-│   ├── purchaseOrder.js    # 🟡 Supplier purchase orders (B2B)
-│   ├── supplier.js         # 🟡 Supplier/vendor management
-│   └── report.js           # 🟡 Business analytics reports
-├── utils/                   # Helper functions & middleware
-│   ├── auth.js             # JWT middleware & authentication
-│   ├── config.js           # Environment configuration
-│   ├── logger.js           # Logging utility
-│   ├── middleware.js       # Error handling & validation
-│   └── seedAdmin.js        # Admin user seeding
-├── requests/                # REST client test files
-│   ├── login.rest          # Auth API tests
-│   ├── users.rest          # User API tests
-│   ├── products.rest       # Product API tests
-│   ├── categories.rest     # Category API tests
-│   ├── orders.rest         # Order API tests
-│   ├── customers.rest      # Customer API tests
-│   ├── inventory.rest      # Inventory API tests
-│   ├── payments.rest       # Payment API tests
-│   ├── purchaseOrders.rest # PO API tests
-│   └── suppliers.rest      # Supplier API tests
-├── app.js                   # Express app setup
-├── index.js                 # Server entry point
-├── mongo.js                 # MongoDB connection
-├── package.json             # Dependencies & scripts
-├── .env                     # Environment variables (create this)
-├── ENV_SETUP.md             # Environment setup guide
-├── README.md                # This file
-└── MODELS_SUMMARY.md        # 📖 Complete models documentation
+├── controllers/          # Route controllers (business logic)
+│   ├── categories.js
+│   ├── customers.js
+│   ├── departments.js   # Department management
+│   ├── inventory.js
+│   ├── login.js
+│   ├── orders.js
+│   ├── payments.js
+│   ├── products.js
+│   ├── purchaseOrders.js
+│   ├── reports.js
+│   ├── roles.js         # Role management
+│   ├── suppliers.js
+│   └── users.js
+│
+├── models/              # Mongoose schemas
+│   ├── category.js
+│   ├── customer.js
+│   ├── department.js    # NEW: Department model
+│   ├── inventory.js
+│   ├── order.js
+│   ├── payment.js
+│   ├── product.js
+│   ├── purchaseOrder.js
+│   ├── report.js
+│   ├── role.js          # NEW: Role model
+│   ├── supplier.js
+│   └── user.js          # UPDATED: Now uses Role & Department references
+│
+├── utils/               # Utility functions
+│   ├── auth.js          # Authentication middleware
+│   ├── config.js        # Configuration
+│   ├── logger.js        # Logging utility
+│   ├── middleware.js    # Custom middleware
+│   ├── seedAdmin.js     # UPDATED: Create default admin
+│   ├── seedRolesAndDepartments.js  # NEW: Seed roles & departments
+│   ├── migrateUsersRole.js         # NEW: Migrate users to new schema
+│   └── completeSetup.js            # NEW: Complete setup script
+│
+├── requests/            # REST API test files
+│   ├── categories.rest
+│   ├── customers.rest
+│   ├── departments.rest # NEW: Department API tests
+│   ├── inventory.rest
+│   ├── orders.rest
+│   ├── payments.rest
+│   ├── products.rest
+│   ├── purchaseOrders.rest
+│   ├── reports.rest
+│   ├── roles.rest       # NEW: Role API tests
+│   ├── suppliers.rest
+│   └── users.rest       # UPDATED: New API endpoints
+│
+├── app.js               # Express application
+├── index.js             # Server entry point
+├── mongo.js             # MongoDB connection
+├── package.json
+├── .env                 # Environment variables
+├── MIGRATION_GUIDE.md   # NEW: Migration documentation
+├── SETUP_SCRIPTS.md     # NEW: Setup guide
+├── MODELS_SUMMARY.md    # Model documentation
+└── README.md            # This file
 ```
 
-**Legend**: ✅ Implemented | 🟡 Model Ready (Controller Pending) | ❌ Not Started
-
 ---
 
-## � Implementation Status
-
-### Module Status Overview
-
-| Module | Model | Controller | API Endpoints | Frontend UI | Status |
-|--------|-------|------------|---------------|-------------|--------|
-| **Authentication** | ✅ | ✅ | ✅ | ✅ | 🟢 Complete |
-| **Users** | ✅ | ✅ | ✅ | ❌ | 🟡 Backend Ready |
-| **Products** | ✅ | ✅ | ✅ | ✅ | 🟢 Complete |
-| **Categories** | ✅ | ✅ | ✅ | ✅ | 🟢 Complete |
-| **Orders** | ✅ | ✅ | ✅ | ✅ | 🟢 Complete |
-| **Customers** | ✅ | 🟡 | ❌ | ❌ | 🟡 Model Ready |
-| **Inventory** | ✅ | 🟡 | ❌ | ❌ | 🟡 Model Ready |
-| **Payments** | ✅ | 🟡 | ❌ | ❌ | 🟡 Model Ready |
-| **Purchase Orders** | ✅ | 🟡 | ❌ | ❌ | 🟡 Model Ready |
-| **Suppliers** | ✅ | 🟡 | ❌ | ❌ | 🟡 Model Ready |
-| **Reports** | ✅ | 🟡 | ❌ | ❌ | 🟡 Model Ready |
-
-**Legend**:  
-🟢 Complete | 🟡 Partial (Model Ready) | ❌ Not Started | ✅ Done | 🟡 Pending
-
-### Implementation Priority
-
-#### 🔥 **High Priority** (Core Features)
-1. ✅ **Authentication** - Login, register, JWT tokens
-2. ✅ **Products** - CRUD, filters, search, pagination
-3. ✅ **Categories** - CRUD, hierarchical structure
-4. ✅ **Orders** - Order creation, status management
-5. 🟡 **Customers** - Customer profiles, purchase history
-6. 🟡 **Inventory** - Stock tracking, movements, alerts
-
-#### 📦 **Medium Priority** (Business Operations)
-7. 🟡 **Payments** - Transaction tracking, refunds
-8. 🟡 **Purchase Orders** - Procurement workflow
-9. 🟡 **Suppliers** - Vendor management
-
-#### 📊 **Low Priority** (Analytics)
-10. 🟡 **Reports** - Business intelligence, analytics
-
----
-
-## �🚀 Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- **Node.js** >= 18.0.0
-- **MongoDB** >= 6.0 (local or MongoDB Atlas)
-- **npm** >= 9.0.0
+- Node.js v20 or higher
+- MongoDB (local or Atlas)
+- npm or yarn
 
 ### Installation
 
-1. **Navigate to backend directory**:
+1. **Clone the repository**
    ```bash
-   cd backend
+   git clone https://github.com/PhatNguyenTT2/mini-store.git
+   cd mini-store/backend
    ```
 
-2. **Install dependencies**:
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Setup environment variables**:
+3. **Configure environment variables**
    
-   Create `.env` file in the `backend/` directory:
+   Create a `.env` file in the backend directory:
    ```env
+   MONGODB_URI=mongodb://localhost:27017/martApp
+   # or use MongoDB Atlas
+   # MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/martApp
+   
    PORT=3001
-   MONGODB_URI=mongodb://localhost:27017/ministore
-   TEST_MONGODB_URI=mongodb://localhost:27017/ministore-test
-   JWT_SECRET=your-secret-jwt-key-change-this-in-production-min-32-chars
+   SECRET=your-secret-key-for-jwt
    NODE_ENV=development
    ```
+
+4. **Run setup script** (First time only)
+   ```bash
+   npm run setup
+   ```
    
-   📖 **See [ENV_SETUP.md](./ENV_SETUP.md) for detailed setup guide**
+   This will:
+   - Create default roles (ADMIN, MANAGER, EMPLOYEE, USER)
+   - Create default departments (IT, HR, SALES, FIN, OPS, MKT)
+   - Migrate existing users (if any)
+   - Create default admin account (username: `admin`, password: `admin123`)
 
-4. **Start MongoDB** (if using local):
+5. **Start the server**
    ```bash
-   mongod
-   ```
-
-5. **Start development server**:
-   ```bash
+   # Development mode with auto-reload
    npm run dev
+   
+   # Production mode
+   npm start
    ```
 
-   The server will start at `http://localhost:3001`
+6. **Server is now running!** 🎉
+   ```
+   Server running on http://localhost:3001
+   ```
 
-### Available Scripts
+### Quick Test
+
+Test your API with the default admin credentials:
 
 ```bash
-npm start          # Start production server
-npm run dev        # Start development server with hot reload
-npm run lint       # Run ESLint
-npm test           # Run tests
-npm run start:test # Start test server
-```
-
----
-
-## 🔌 API Endpoints
-
-**Base URL**: `http://localhost:3001/api`
-
-### ✅ Implemented Endpoints
-
-#### **Authentication**
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/login` | Public | Login (get JWT token) |
-| `POST` | `/api/login/register` | Public | Register admin account |
-| `POST` | `/api/login/logout` | Required | Logout (invalidate token) |
-| `GET` | `/api/login/me` | Required | Get current user profile |
-
-#### **Products**
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/products` | Public | List products (with filters & pagination) |
-| `GET` | `/api/products/:id` | Public | Get product detail |
-| `POST` | `/api/products` | Admin | Create new product |
-| `PUT` | `/api/products/:id` | Admin | Update product |
-| `DELETE` | `/api/products/:id` | Admin | Delete product |
-
-**Product Filters**: `?category=id&minPrice=0&maxPrice=100&search=query&page=1&limit=10&sort=price`
-
-#### **Categories**
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/categories` | Public | List all categories |
-| `GET` | `/api/categories/:id` | Public | Get category detail |
-| `POST` | `/api/categories` | Admin | Create category |
-| `PUT` | `/api/categories/:id` | Admin | Update category |
-| `DELETE` | `/api/categories/:id` | Admin | Delete category |
-
-#### **Orders**
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/orders` | Admin | List all orders |
-| `GET` | `/api/orders/:id` | Required | Get order detail |
-| `POST` | `/api/orders` | Public | Create new order |
-| `PATCH` | `/api/orders/:id/status` | Admin | Update order status |
-| `GET` | `/api/orders/my-orders` | Required | Get current user's orders |
-
-#### **Users**
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/users` | Admin | List all users |
-| `GET` | `/api/users/:id` | Admin | Get user detail |
-| `POST` | `/api/users` | Admin | Create new user |
-| `PUT` | `/api/users/:id` | Admin | Update user |
-| `DELETE` | `/api/users/:id` | Admin | Delete user |
-
----
-
-### 🟡 Pending Implementation (Controllers Needed)
-
-#### **Customers** (CRM)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/customers` | Admin | List all customers |
-| `GET` | `/api/customers/:id` | Admin | Get customer detail |
-| `GET` | `/api/customers/:id/orders` | Admin | Get customer order history |
-| `GET` | `/api/customers/:id/stats` | Admin | Get customer statistics |
-| `POST` | `/api/customers` | Admin | Create customer profile |
-| `PUT` | `/api/customers/:id` | Admin | Update customer |
-| `DELETE` | `/api/customers/:id` | Admin | Delete customer |
-| `POST` | `/api/customers/:id/loyalty` | Admin | Add loyalty points |
-
-#### **Inventory** (Stock Management)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/inventory` | Admin | List all inventory |
-| `GET` | `/api/inventory/:productId` | Admin | Get product inventory |
-| `GET` | `/api/inventory/low-stock` | Admin | Get low stock items |
-| `GET` | `/api/inventory/:productId/movements` | Admin | Get stock movement history |
-| `POST` | `/api/inventory/adjust` | Admin | Manual stock adjustment |
-| `POST` | `/api/inventory/reserve` | System | Reserve stock for order |
-| `POST` | `/api/inventory/release` | System | Release reserved stock |
-
-#### **Payments** (Transactions)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/payments` | Admin | List all payments |
-| `GET` | `/api/payments/:id` | Admin | Get payment detail |
-| `GET` | `/api/payments/order/:orderId` | Admin | Get order payments |
-| `POST` | `/api/payments` | Admin | Record payment |
-| `POST` | `/api/payments/:id/refund` | Admin | Process refund |
-| `GET` | `/api/payments/stats` | Admin | Payment statistics |
-
-#### **Purchase Orders** (B2B Procurement)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/purchase-orders` | Admin | List all POs |
-| `GET` | `/api/purchase-orders/:id` | Admin | Get PO detail |
-| `POST` | `/api/purchase-orders` | Admin | Create PO |
-| `PUT` | `/api/purchase-orders/:id` | Admin | Update PO |
-| `POST` | `/api/purchase-orders/:id/approve` | Admin | Approve PO |
-| `POST` | `/api/purchase-orders/:id/receive` | Admin | Mark items as received |
-| `DELETE` | `/api/purchase-orders/:id` | Admin | Cancel PO |
-
-#### **Suppliers** (Vendor Management)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/suppliers` | Admin | List all suppliers |
-| `GET` | `/api/suppliers/:id` | Admin | Get supplier detail |
-| `GET` | `/api/suppliers/:id/purchase-orders` | Admin | Get supplier PO history |
-| `GET` | `/api/suppliers/:id/stats` | Admin | Get supplier statistics |
-| `POST` | `/api/suppliers` | Admin | Create supplier |
-| `PUT` | `/api/suppliers/:id` | Admin | Update supplier |
-| `DELETE` | `/api/suppliers/:id` | Admin | Delete supplier |
-
-#### **Reports** (Business Intelligence)
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/reports` | Admin | List all reports |
-| `GET` | `/api/reports/:id` | Admin | Get report detail |
-| `POST` | `/api/reports/generate` | Admin | Generate new report |
-| `GET` | `/api/reports/sales` | Admin | Sales report |
-| `GET` | `/api/reports/inventory` | Admin | Inventory report |
-| `GET` | `/api/reports/revenue` | Admin | Revenue report |
-| `GET` | `/api/reports/profit` | Admin | Profit & loss report |
-| `GET` | `/api/reports/customer` | Admin | Customer analytics |
-| `GET` | `/api/reports/product` | Admin | Product performance |
-| `GET` | `/api/reports/supplier` | Admin | Supplier performance |
-
----
-
-### 📝 Request/Response Examples
-
-#### Create Order
-```bash
-POST /api/orders
+# Login
+POST http://localhost:3001/api/login
 Content-Type: application/json
 
 {
-  "customer": {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "phone": "+84123456789"
-  },
-  "shippingAddress": {
-    "street": "123 Main St",
-    "city": "Ho Chi Minh",
-    "state": "HCM",
-    "zipCode": "70000",
-    "country": "Vietnam"
-  },
-  "items": [
-    {
-      "product": "product_id_here",
-      "quantity": 2
-    }
-  ],
-  "paymentMethod": "cash"
+  "username": "admin",
+  "password": "admin123"
 }
 ```
 
-#### Response Format (Success)
-```json
-{
-  "success": true,
-  "data": {
-    "order": {
-      "orderNumber": "ORD2025000001",
-      "customer": {...},
-      "items": [...],
-      "total": 57.70,
-      "status": "pending"
-    }
-  },
-  "message": "Order created successfully"
-}
-```
-
-#### Response Format (Error)
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Product not found",
-    "code": "PRODUCT_NOT_FOUND",
-    "status": 404
-  }
-}
-```
+⚠️ **Important**: Change the default admin password after first login!
 
 ---
 
-📖 **Complete API Documentation**: [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) (Coming Soon)  
-🧪 **API Testing**: Use `.rest` files in `/requests` folder with REST Client extension
+## 📚 API Documentation
+
+### Base URL
+```
+http://localhost:3001/api
+```
+
+### Authentication
+Most endpoints require JWT authentication. Include the token in the Authorization header:
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+### API Endpoints
+
+#### 🔐 Authentication
+```http
+POST   /api/login              # User login
+POST   /api/login/register     # User registration
+```
+
+#### 👤 Users
+```http
+GET    /api/users              # Get all users (Admin only)
+GET    /api/users/:id          # Get user by ID
+POST   /api/users              # Create user (Admin only)
+PUT    /api/users/:id          # Update user
+PATCH  /api/users/:id/role     # Update user role (Admin only)
+PATCH  /api/users/:id/department # Update user department (Admin only)
+PATCH  /api/users/:id/status   # Toggle user status (Admin only)
+DELETE /api/users/:id          # Delete user (Admin only)
+```
+
+#### 🎭 Roles (NEW)
+```http
+GET    /api/roles              # Get all roles
+GET    /api/roles/:id          # Get role by ID
+GET    /api/roles/code/:roleId # Get role by code (e.g., ADMIN)
+POST   /api/roles              # Create role (Admin only)
+PUT    /api/roles/:id          # Update role (Admin only)
+PATCH  /api/roles/:id/toggle   # Toggle role status (Admin only)
+DELETE /api/roles/:id          # Delete role (Admin only)
+```
+
+#### 🏢 Departments (NEW)
+```http
+GET    /api/departments        # Get all departments
+GET    /api/departments/:id    # Get department by ID
+GET    /api/departments/code/:deptId # Get dept by code
+GET    /api/departments/:id/users    # Get users in department
+POST   /api/departments        # Create department (Admin only)
+PUT    /api/departments/:id    # Update department (Admin only)
+PATCH  /api/departments/:id/toggle   # Toggle dept status (Admin only)
+DELETE /api/departments/:id    # Delete department (Admin only)
+```
+
+#### 📦 Products
+```http
+GET    /api/products           # Get all products
+GET    /api/products/:id       # Get product by ID
+POST   /api/products           # Create product
+PUT    /api/products/:id       # Update product
+DELETE /api/products/:id       # Delete product
+```
+
+#### 📂 Categories
+```http
+GET    /api/categories         # Get all categories
+GET    /api/categories/:id     # Get category by ID
+POST   /api/categories         # Create category
+PUT    /api/categories/:id     # Update category
+DELETE /api/categories/:id     # Delete category
+```
+
+#### 🛒 Orders
+```http
+GET    /api/orders             # Get all orders
+GET    /api/orders/:id         # Get order by ID
+POST   /api/orders             # Create order
+PUT    /api/orders/:id         # Update order
+DELETE /api/orders/:id         # Delete order
+```
+
+#### 👥 Customers
+```http
+GET    /api/customers          # Get all customers
+GET    /api/customers/:id      # Get customer by ID
+POST   /api/customers          # Create customer
+PUT    /api/customers/:id      # Update customer
+DELETE /api/customers/:id      # Delete customer
+```
+
+#### 🏭 Suppliers
+```http
+GET    /api/suppliers          # Get all suppliers
+GET    /api/suppliers/:id      # Get supplier by ID
+POST   /api/suppliers          # Create supplier
+PUT    /api/suppliers/:id      # Update supplier
+DELETE /api/suppliers/:id      # Delete supplier
+```
+
+#### 📋 Purchase Orders
+```http
+GET    /api/purchase-orders    # Get all purchase orders
+GET    /api/purchase-orders/:id # Get PO by ID
+POST   /api/purchase-orders    # Create purchase order
+PUT    /api/purchase-orders/:id # Update purchase order
+DELETE /api/purchase-orders/:id # Delete purchase order
+```
+
+#### 💰 Payments
+```http
+GET    /api/payments           # Get all payments
+GET    /api/payments/:id       # Get payment by ID
+POST   /api/payments           # Create payment
+PUT    /api/payments/:id       # Update payment
+DELETE /api/payments/:id       # Delete payment
+```
+
+#### 📊 Inventory
+```http
+GET    /api/inventory          # Get inventory status
+GET    /api/inventory/:id      # Get inventory by product ID
+POST   /api/inventory          # Update inventory
+```
+
+#### 📈 Reports
+```http
+GET    /api/reports            # Get all reports
+GET    /api/reports/:id        # Get report by ID
+POST   /api/reports            # Generate report
+```
+
+For detailed API examples, see the `requests/` directory for REST client files.
 
 ---
 
 ## 🗄️ Database Models
 
-**Total Models**: 10 (4 fully implemented + 6 pending controller implementation)
+### Updated Models
 
-### Quick Reference Table
-
-| Model | Status | Purpose | Auto-Generated Code |
-|-------|--------|---------|---------------------|
-| **User** | ✅ Active | Authentication & admin management | - |
-| **Product** | ✅ Active | Product catalog with inventory | `slug` |
-| **Category** | ✅ Active | Hierarchical product categorization | `slug` |
-| **Order** | ✅ Active | Customer sales orders | `ORD2025000001` |
-| **Customer** | 🟡 Model Ready | Customer CRM & loyalty program | `CUST2025000001` |
-| **Inventory** | 🟡 Model Ready | Stock tracking & movement history | - |
-| **Payment** | 🟡 Model Ready | Payment transaction tracking | `PAY2025000001` |
-| **PurchaseOrder** | 🟡 Model Ready | Supplier procurement orders | `PO2025000001` |
-| **Supplier** | 🟡 Model Ready | Supplier/vendor management | `SUP2025000001` |
-| **Report** | 🟡 Model Ready | Business analytics & reports | - |
-
-### Schema Overview
-
-#### 1. **User** (Authentication & Authorization)
+#### User Model (UPDATED)
 ```javascript
 {
-  username: String (unique, 3-20 chars),
-  email: String (unique),
-  fullName: String (3-50 chars),
-  passwordHash: String (bcrypt hashed),
-  role: Enum ['admin', 'user', 'employee'],
-  isActive: Boolean,
-  tokens: [{ token, createdAt, expiresAt }],
-  lastLogin: Date
+  username: String,         // Unique username
+  email: String,           // Unique email
+  fullName: String,        // Full name
+  passwordHash: String,    // Hashed password
+  role: ObjectId,          // ⭐ Reference to Role (was enum string)
+  department: ObjectId,    // ⭐ NEW: Reference to Department
+  isActive: Boolean,       // Account status
+  tokens: Array,           // JWT tokens
+  lastLogin: Date,         // Last login timestamp
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
-**Relationships**: 1:N with Orders, Payments, PurchaseOrders, Reports
 
----
-
-#### 2. **Product** (Product Catalog)
+#### Role Model (NEW)
 ```javascript
 {
-  name: String,
-  slug: String (auto-generated, URL-friendly),
-  sku: String (unique, uppercase),
-  category: ObjectId (ref: Category),
-  price: Number (min: 0),
-  originalPrice: Number (for discounts),
-  image: String (main image URL),
-  images: [String] (gallery),
-  description: String (max 1000 chars),
-  detailDescription: {
-    intro: [String],
-    specifications: [{label, value}],
-    additionalDesc: String,
-    packaging: [String],
-    suggestedUse: [String],
-    otherIngredients: [String],
-    warnings: [String]
-  },
-  vendor: String,
-  stock: Number (min: 0),
-  rating: Number (0-5),
-  reviews: Number,
-  tags: [String],
-  mfgDate: Date,
-  shelfLife: String,
-  type: String,
-  isActive: Boolean,
-  isFeatured: Boolean
+  roleId: String,          // Unique role code (ADMIN, MANAGER, etc.)
+  roleName: String,        // Display name
+  description: String,     // Role description
+  permissions: [String],   // Array of permissions
+  isActive: Boolean,       // Status
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
-**Relationships**: N:1 with Category | 1:1 with Inventory | N:M with Orders, PurchaseOrders
 
----
-
-#### 3. **Category** (Product Organization)
+#### Department Model (NEW)
 ```javascript
 {
-  name: String (unique, max 100 chars),
-  slug: String (auto-generated),
-  image: String (URL),
-  description: String (max 500 chars),
-  parent: ObjectId (ref: Category, for nested categories),
-  order: Number (display order),
-  isActive: Boolean
+  departmentId: String,    // Unique dept code (IT, HR, etc.)
+  departmentName: String,  // Display name
+  description: String,     // Department description
+  manager: ObjectId,       // Reference to User (manager)
+  location: String,        // Physical location
+  phone: String,           // Contact phone
+  email: String,           // Contact email
+  isActive: Boolean,       // Status
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
-**Relationships**: 1:N with Products | Self-referencing for hierarchy
+
+For all models, see `MODELS_SUMMARY.md`
 
 ---
 
-#### 4. **Order** (Sales Orders)
-```javascript
-{
-  orderNumber: String (auto: ORD2025000001),
-  customer: {
-    name: String,
-    email: String,
-    phone: String
-  },
-  user: ObjectId (ref: User, who processed),
-  shippingAddress: {
-    street, city, state, zipCode, country
-  },
-  items: [{
-    product: ObjectId (ref: Product),
-    productName: String (cached),
-    sku: String (cached),
-    quantity: Number (min: 1),
-    price: Number,
-    subtotal: Number (auto-calc)
-  }],
-  subtotal: Number (auto-calc),
-  shippingFee: Number,
-  tax: Number,
-  discount: Number,
-  total: Number (auto-calc),
-  status: Enum ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'],
-  paymentStatus: Enum ['unpaid', 'partial', 'paid', 'refunded'],
-  paymentMethod: Enum ['cash', 'card', 'bank_transfer', 'e_wallet'],
-  paidAmount: Number,
-  notes: String
-}
-```
-**Relationships**: N:1 with User | N:M with Products | 1:N with Payments
+## 🔐 Authentication & Authorization
+
+### Authentication Flow
+1. User logs in with username/password
+2. Server validates credentials
+3. Server generates JWT token
+4. Client includes token in subsequent requests
+5. Server validates token on protected routes
+
+### Authorization Levels
+
+| Role | Description | Access Level |
+|------|-------------|-------------|
+| **ADMIN** | System administrator | Full access to all resources |
+| **MANAGER** | Department manager | Manage department users and operations |
+| **EMPLOYEE** | Regular employee | Basic operational access |
+| **USER** | Customer | Limited to own profile and orders |
+
+### Protected Routes
+- All routes require authentication
+- POST, PUT, PATCH, DELETE operations typically require Admin role
+- Users can update their own profile
+- Role-based middleware: `userExtractor`, `isAdmin`
 
 ---
 
-#### 5. **Customer** (CRM System) 🟡
-```javascript
-{
-  customerCode: String (auto: CUST2025000001),
-  fullName: String,
-  email: String (unique, sparse - optional for walk-ins),
-  phone: String,
-  address: {
-    street, city, state, zipCode, country
-  },
-  dateOfBirth: Date,
-  gender: Enum ['male', 'female', 'other'],
-  customerType: Enum ['retail', 'wholesale', 'vip'],
-  loyaltyPoints: Number (default: 0),
-  totalSpent: Number (auto-updated),
-  totalOrders: Number (auto-updated),
-  averageOrderValue: Number (auto-calc),
-  lastPurchaseDate: Date,
-  notes: String,
-  isActive: Boolean
-}
-```
-**Relationships**: 1:N with Orders | 1:N with Payments
+## 🔄 Setup & Migration
 
----
+### For New Projects
 
-#### 6. **Inventory** (Stock Management) 🟡
-```javascript
-{
-  product: ObjectId (ref: Product, unique),
-  quantityOnHand: Number (physical stock),
-  quantityReserved: Number (pending orders),
-  quantityAvailable: Number (auto-calc: onHand - reserved),
-  reorderPoint: Number (alert threshold),
-  reorderQuantity: Number (reorder amount),
-  warehouseLocation: String,
-  lastRestocked: Date,
-  lastSold: Date,
-  movements: [{
-    type: Enum ['in', 'out', 'adjustment', 'reserved', 'released'],
-    quantity: Number,
-    reason: String,
-    referenceId: String (Order ID, PO ID, etc.),
-    referenceType: Enum ['order', 'purchase_order', 'adjustment', 'return'],
-    date: Date,
-    performedBy: ObjectId (ref: User),
-    notes: String
-  }]
-}
-```
-**Relationships**: 1:1 with Product | N:1 with Orders, PurchaseOrders (via movements)
-
----
-
-#### 7. **Payment** (Transaction Tracking) 🟡
-```javascript
-{
-  paymentNumber: String (auto: PAY2025000001),
-  paymentType: Enum ['sales', 'purchase'],
-  relatedOrderId: ObjectId (Order or PurchaseOrder),
-  relatedOrderNumber: String (cached),
-  amount: Number,
-  paymentMethod: Enum ['cash', 'card', 'bank_transfer', 'e_wallet', 'check', 'credit'],
-  paymentDate: Date,
-  transactionId: String,
-  bankReference: String,
-  cardLastFourDigits: String,
-  status: Enum ['pending', 'completed', 'failed', 'refunded', 'cancelled'],
-  refundedAmount: Number,
-  refundReason: String,
-  refundedAt: Date,
-  customer: ObjectId (ref: Customer, for sales),
-  supplier: ObjectId (ref: Supplier, for purchases),
-  receivedBy: ObjectId (ref: User),
-  notes: String
-}
-```
-**Relationships**: N:1 with Order or PurchaseOrder | N:1 with Customer or Supplier
-
----
-
-#### 8. **PurchaseOrder** (B2B Procurement) 🟡
-```javascript
-{
-  poNumber: String (auto: PO2025000001),
-  supplier: ObjectId (ref: Supplier),
-  orderDate: Date,
-  expectedDeliveryDate: Date,
-  actualDeliveryDate: Date,
-  items: [{
-    product: ObjectId (ref: Product),
-    productName: String (cached),
-    sku: String (cached),
-    quantity: Number,
-    unitPrice: Number (cost price),
-    subtotal: Number (auto-calc),
-    received: Number (quantity received)
-  }],
-  subtotal: Number,
-  shippingFee: Number,
-  tax: Number,
-  discount: Number,
-  total: Number (auto-calc),
-  status: Enum ['draft', 'pending', 'approved', 'partially_received', 'received', 'cancelled'],
-  paymentStatus: Enum ['unpaid', 'partial', 'paid'],
-  paidAmount: Number,
-  createdBy: ObjectId (ref: User),
-  approvedBy: ObjectId (ref: User),
-  approvedAt: Date,
-  notes: String
-}
-```
-**Relationships**: N:1 with Supplier | N:M with Products | 1:N with Payments
-
----
-
-#### 9. **Supplier** (Vendor Management) 🟡
-```javascript
-{
-  supplierCode: String (auto: SUP2025000001),
-  companyName: String,
-  contactPerson: {
-    name, position, phone, email
-  },
-  email: String (unique),
-  phone: String,
-  address: {
-    street, city, state, zipCode, country
-  },
-  taxId: String (unique, sparse),
-  bankAccount: {
-    bankName, accountNumber, accountName, swiftCode
-  },
-  paymentTerms: Enum ['cod', 'net15', 'net30', 'net60', 'net90'],
-  creditLimit: Number,
-  currentDebt: Number (auto-updated),
-  productsSupplied: [ObjectId] (ref: Product),
-  rating: Number (0-5),
-  totalPurchaseOrders: Number (auto-updated),
-  totalPurchaseAmount: Number (auto-updated),
-  lastPurchaseDate: Date,
-  notes: String,
-  isActive: Boolean
-}
-```
-**Relationships**: 1:N with PurchaseOrders | N:M with Products | 1:N with Payments
-
----
-
-#### 10. **Report** (Business Intelligence) 🟡
-```javascript
-{
-  reportType: Enum ['sales', 'inventory', 'revenue', 'profit', 'customer', 'product', 'supplier'],
-  reportName: String,
-  period: {
-    startDate: Date,
-    endDate: Date
-  },
-  data: Mixed (dynamic based on reportType),
-  summary: {
-    totalRevenue: Number,
-    totalCost: Number,
-    profit: Number,
-    profitMargin: Number,
-    orderCount: Number,
-    customerCount: Number,
-    productCount: Number,
-    averageOrderValue: Number
-  },
-  generatedBy: ObjectId (ref: User),
-  format: Enum ['json', 'pdf', 'excel', 'csv'],
-  filePath: String,
-  notes: String
-}
-```
-**Relationships**: N:1 with User | Aggregates from Order, Product, Customer, PurchaseOrder
-
----
-
-### Entity Relationship Diagram
-
-```
-      ┌──────────┐
-      │   User   │──────┐
-      └──────────┘      │
-           │ 1:N        │ 1:N
-           ▼            ▼
-      ┌──────────┐  ┌────────────┐
-      │  Order   │  │PurchaseOrder│
-      └──────────┘  └────────────┘
-           │ N:M         │ N:M
-           ▼             ▼
-      ┌──────────┐──┐┌──────────┐
-      │ Product  │  ││ Supplier │
-      └──────────┘  │└──────────┘
-           │ N:1    │
-           ▼        │
-      ┌──────────┐  │
-      │Category  │  │
-      └──────────┘  │
-                    │
-      ┌──────────┐  │
-      │Inventory │──┘ 1:1
-      └──────────┘
-           
-      ┌──────────┐
-      │Customer  │──┐ 1:N
-      └──────────┘  │
-                    ▼
-                ┌──────────┐
-                │ Payment  │
-                └──────────┘
+Simply run:
+```bash
+npm run setup
 ```
 
-📖 **Complete Models Documentation**: See [MODELS_SUMMARY.md](./MODELS_SUMMARY.md) for detailed field specifications, business rules, and implementation guidelines.
+### For Existing Projects (Migration)
 
----
+If you have existing users with old role format (string enum), follow these steps:
 
-## 🔐 Authentication
-
-### JWT Token-Based Authentication
-
-1. **Register** or **Login** to receive JWT token
-2. Include token in Authorization header for protected routes:
-   ```
-   Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+1. **Backup your database**
+   ```bash
+   mongodump --uri="your_mongodb_uri" --out=./backup
    ```
 
-### Role-Based Access Control
+2. **Run complete setup**
+   ```bash
+   npm run setup
+   ```
 
-#### Access Levels
+This will:
+- ✅ Create default roles and departments
+- ✅ Migrate existing users from string roles to ObjectId references
+- ✅ Verify all data integrity
 
-| Level | Permissions | Example Endpoints |
-|-------|-------------|-------------------|
-| **Public** | View products, categories, create orders | `GET /products`, `POST /orders` |
-| **Authenticated** | View own orders, cart operations | `GET /orders/my-orders`, `POST /cart/add` |
-| **Employee** | Manage inventory, process orders | `POST /inventory/adjust`, `PATCH /orders/:id/status` |
-| **Admin** | Full system access | All CRUD operations |
+### Manual Steps (if needed)
 
-#### Role Hierarchy
-```
-Admin (all permissions)
-  └── Employee (limited permissions)
-      └── User (basic permissions)
-          └── Public (no auth required)
-```
+```bash
+# Create roles and departments only
+npm run seed:roles
 
-### Protected Route Implementation
+# Migrate existing users only
+npm run migrate:users
 
-```javascript
-// Public endpoint (no auth)
-app.use('/api/products', productsRouter)
-
-// Authenticated endpoint (any logged-in user)
-app.use('/api/cart', userExtractor, cartRouter)
-
-// Admin-only endpoint
-app.use('/api/users', userExtractor, isAdmin, usersRouter)
-
-// Employee or Admin endpoint
-app.use('/api/orders', userExtractor, isEmployeeOrAdmin, ordersRouter)
+# Create admin account only
+npm run seed:admin
 ```
 
-### Middleware Chain
-```javascript
-userExtractor    // Extracts user from JWT token
-  → isAdmin      // Checks if user.role === 'admin'
-  → isEmployee   // Checks if user.role === 'employee'
-  → isEmployeeOrAdmin  // Checks if user.role is 'employee' or 'admin'
+📖 For detailed migration guide, see [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
+
+---
+
+## 📜 Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| **Start** | `npm start` | Start server in production mode |
+| **Dev** | `npm run dev` | Start server with auto-reload |
+| **Test** | `npm test` | Run tests |
+| **Lint** | `npm run lint` | Run ESLint |
+| **Setup** | `npm run setup` | 🆕 Complete setup (roles, departments, migration) |
+| **Seed Roles** | `npm run seed:roles` | 🆕 Create default roles & departments |
+| **Seed Admin** | `npm run seed:admin` | 🆕 Create default admin account |
+| **Migrate** | `npm run migrate:users` | 🆕 Migrate users to new schema |
+
+---
+
+## 🔧 Environment Variables
+
+Create a `.env` file in the backend directory:
+
+```env
+# Database
+MONGODB_URI=mongodb://localhost:27017/martApp
+
+# Server
+PORT=3001
+NODE_ENV=development
+
+# JWT Secret
+SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Optional
+LOG_LEVEL=info
 ```
 
----
-
-## 🗺️ Development Roadmap
-
-### Phase 1: Core E-commerce ✅ (Completed)
-- [x] Authentication system (JWT)
-- [x] User management with roles
-- [x] Product catalog with filtering
-- [x] Category management (hierarchical)
-- [x] Order processing
-- [x] Shopping cart operations
-- [x] Basic error handling
-- [x] API documentation (basic)
-
-### Phase 2: Customer Management 🟡 (In Progress)
-**Goal**: Complete CRM functionality
-
-- [ ] **Customer CRUD Operations**
-  - [ ] Create customer profiles
-  - [ ] Update customer information
-  - [ ] View customer list with filters
-  - [ ] Delete/deactivate customers
-  
-- [ ] **Customer Analytics**
-  - [ ] Purchase history
-  - [ ] Spending statistics
-  - [ ] Loyalty points system
-  - [ ] Customer segmentation (retail/wholesale/VIP)
-  
-- [ ] **Business Logic**
-  - [ ] Auto-update customer statistics on orders
-  - [ ] Loyalty points calculation
-  - [ ] Customer lifetime value
-  
-- [ ] **Frontend Integration**
-  - [ ] Customer management page
-  - [ ] Customer detail view
-  - [ ] Customer search & filters
-
-**Estimated Time**: 2-3 weeks
-
----
-
-### Phase 3: Inventory Management 🟡 (Next)
-**Goal**: Real-time stock tracking and warehouse management
-
-- [ ] **Inventory CRUD**
-  - [ ] View inventory list
-  - [ ] View product inventory detail
-  - [ ] Manual stock adjustments
-  - [ ] Stock movement history
-  
-- [ ] **Stock Operations**
-  - [ ] Auto-reserve stock on order
-  - [ ] Auto-increase stock on PO receiving
-  - [ ] Low stock alerts
-  - [ ] Reorder point notifications
-  
-- [ ] **Warehouse Management**
-  - [ ] Location tracking
-  - [ ] Movement audit trail
-  - [ ] Stock reconciliation
-  
-- [ ] **Frontend Integration**
-  - [ ] Inventory dashboard
-  - [ ] Stock adjustment interface
-  - [ ] Movement history viewer
-  - [ ] Low stock alerts UI
-
-**Estimated Time**: 3-4 weeks
-
----
-
-### Phase 4: Payment Processing 🟡 (Planned)
-**Goal**: Complete payment transaction management
-
-- [ ] **Payment CRUD**
-  - [ ] Record payments
-  - [ ] View payment history
-  - [ ] Payment detail view
-  - [ ] Payment statistics
-  
-- [ ] **Payment Operations**
-  - [ ] Multiple payment methods
-  - [ ] Partial payments
-  - [ ] Refund processing
-  - [ ] Payment reconciliation
-  
-- [ ] **Integration**
-  - [ ] Link payments to orders
-  - [ ] Link payments to purchase orders
-  - [ ] Update order payment status automatically
-  
-- [ ] **Frontend Integration**
-  - [ ] Payment history page
-  - [ ] Payment recording form
-  - [ ] Refund interface
-  - [ ] Payment reports
-
-**Estimated Time**: 2-3 weeks
-
----
-
-### Phase 5: Procurement (B2B) 🟡 (Planned)
-**Goal**: Complete supplier and purchase order management
-
-#### Part A: Supplier Management
-- [ ] **Supplier CRUD**
-  - [ ] Create supplier profiles
-  - [ ] Update supplier information
-  - [ ] View supplier list
-  - [ ] Delete/deactivate suppliers
-  
-- [ ] **Supplier Analytics**
-  - [ ] Purchase history
-  - [ ] Supplier performance ratings
-  - [ ] Credit management
-  - [ ] Payment terms tracking
-
-#### Part B: Purchase Orders
-- [ ] **PO Workflow**
-  - [ ] Create purchase orders
-  - [ ] Approval workflow (draft → pending → approved)
-  - [ ] Receive items (partial/full)
-  - [ ] PO cancellation
-  
-- [ ] **PO Operations**
-  - [ ] Auto-generate PO numbers
-  - [ ] Track expected vs actual delivery
-  - [ ] Link to inventory (auto-increase stock)
-  - [ ] Payment tracking
-  
-- [ ] **Frontend Integration**
-  - [ ] Supplier management page
-  - [ ] PO creation form
-  - [ ] PO list with filters
-  - [ ] Receiving interface
-  - [ ] PO approval workflow UI
-
-**Estimated Time**: 4-5 weeks
-
----
-
-### Phase 6: Business Intelligence 🟡 (Future)
-**Goal**: Comprehensive reporting and analytics
-
-- [ ] **Report Generation**
-  - [ ] Sales reports (daily/weekly/monthly)
-  - [ ] Inventory reports (stock status, movements)
-  - [ ] Revenue reports (by period, category, product)
-  - [ ] Profit & loss reports
-  - [ ] Customer analytics (top customers, segments)
-  - [ ] Product performance (best sellers, slow movers)
-  - [ ] Supplier performance
-  
-- [ ] **Export Formats**
-  - [ ] JSON (default)
-  - [ ] PDF generation
-  - [ ] Excel export
-  - [ ] CSV export
-  
-- [ ] **Frontend Integration**
-  - [ ] Reports dashboard
-  - [ ] Report generation interface
-  - [ ] Data visualization (charts, graphs)
-  - [ ] Report scheduling
-  - [ ] Report history
-
-**Estimated Time**: 4-6 weeks
-
----
-
-### Phase 7: Advanced Features (Future)
-- [ ] **Multi-warehouse support**
-- [ ] **Batch operations**
-- [ ] **Barcode scanning integration**
-- [ ] **Advanced search (Elasticsearch)**
-- [ ] **Email notifications**
-- [ ] **SMS notifications**
-- [ ] **Automated backups**
-- [ ] **API rate limiting**
-- [ ] **Caching (Redis)**
-- [ ] **Real-time updates (WebSocket)**
-
----
-
-### Overall Timeline
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Q4 2024        │  Q1 2025        │  Q2 2025        │  Q3 2025 │
-├─────────────────┼─────────────────┼─────────────────┼──────────┤
-│ Phase 1 ✅      │ Phase 2 🟡      │ Phase 4 🟡      │ Phase 6 🟡│
-│ Core E-commerce │ CRM             │ Payments        │ Reports   │
-│                 │ Phase 3 🟡      │ Phase 5 🟡      │ Phase 7 🟡│
-│                 │ Inventory       │ Procurement     │ Advanced  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Current Focus**: Phase 2 (Customer Management) + Phase 3 (Inventory)
+**⚠️ Security Note**: 
+- Never commit `.env` file to version control
+- Use strong, random SECRET key in production
+- Change default admin password after first login
 
 ---
 
 ## 🧪 Testing
 
-### Test Order Creation
+Use the REST client files in the `requests/` directory:
 
-```bash
-# 1. Register admin
-curl -X POST http://localhost:3001/api/login/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "admin",
-    "email": "admin@example.com",
-    "fullName": "Admin User",
-    "password": "admin123"
-  }'
+1. Install **REST Client** extension in VS Code
+2. Open any `.rest` file in `requests/` directory
+3. Run requests by clicking "Send Request"
 
-# 2. Login
-curl -X POST http://localhost:3001/api/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "admin",
-    "password": "admin123"
-  }'
-
-# Save the returned token
-
-# 3. Create category
-curl -X POST http://localhost:3001/api/categories \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Grains",
-    "description": "Organic grains and cereals"
-  }'
-
-# 4. Create product
-curl -X POST http://localhost:3001/api/products \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Organic Quinoa",
-    "sku": "SKU001",
-    "category": "CATEGORY_ID_FROM_STEP_3",
-    "price": 28.85,
-    "originalPrice": 32.80,
-    "image": "https://example.com/quinoa.jpg",
-    "description": "Premium organic quinoa",
-    "vendor": "Organic Farms",
-    "stock": 100
-  }'
-```
+Example files:
+- `users.rest` - User management endpoints
+- `roles.rest` - Role management endpoints (NEW)
+- `departments.rest` - Department management endpoints (NEW)
+- `products.rest` - Product endpoints
+- And more...
 
 ---
 
-## 🔧 Development Notes
+## 🎯 What's New (Latest Update)
 
-### Adding New Endpoints
+### ✨ Role-Based Access Control System
+- 🆕 **Role Model**: Define custom roles with permissions
+- 🆕 **Department Model**: Organize users by departments
+- 🔄 **Updated User Model**: Now uses ObjectId references instead of enum
 
-1. Create controller in `controllers/`
-2. Define routes with express.Router()
-3. Import and mount in `app.js`
-4. Add authentication middleware if needed
+### 🚀 New API Endpoints
+- `/api/roles` - Complete role management
+- `/api/departments` - Complete department management
+- `/api/users/:id/department` - Update user department
 
-### Database Indexing
+### 🛠️ Setup & Migration Tools
+- ✅ Automated setup script
+- ✅ Data migration tools
+- ✅ Seed scripts for default data
+- ✅ Comprehensive documentation
 
-Models include indexes for performance:
-- Products: Text search on name/description/tags
-- Orders: orderNumber, user+createdAt, status
-- Categories: slug
-
-### Error Handling
-
-All errors are caught by the centralized error handler in `utils/middleware.js`:
-- Validation errors → 400
-- Cast errors → 400
-- JWT errors → 401
-- Duplicate key errors → 400
-
----
-
-## 📦 Deployment
-
-### Environment Variables for Production
-
-```env
-NODE_ENV=production
-PORT=3001
-MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/ministore
-JWT_SECRET=secure-random-string-at-least-32-characters-long
-```
-
-### Deployment Platforms
-
-- **Heroku**: `git push heroku main`
-- **Railway**: Connect GitHub repo
-- **Render**: Connect GitHub repo
-- **DigitalOcean**: Use App Platform
+### 📚 Documentation
+- ✅ `MIGRATION_GUIDE.md` - Step-by-step migration guide
+- ✅ `SETUP_SCRIPTS.md` - Setup instructions
+- ✅ `MODELS_SUMMARY.md` - Database schema documentation
+- ✅ Updated REST API examples
 
 ---
 
-## 🤝 Frontend Integration
+## 📝 Default Data
 
-Frontend is located in the parent directory (`../`). To connect frontend to backend:
+After running `npm run setup`, you'll have:
 
-1. **Update frontend `.env`**:
-   ```env
-   VITE_API_BASE_URL=http://localhost:3001/api
-   ```
+### Default Roles
+- **ADMIN** - Full system access
+- **MANAGER** - Department management
+- **EMPLOYEE** - Basic operations
+- **USER** - Customer access
 
-2. **Build frontend**:
-   ```bash
-   cd ..
-   npm run build
-   ```
+### Default Departments
+- **IT** - Information Technology
+- **HR** - Human Resources
+- **SALES** - Sales Department
+- **FIN** - Finance
+- **OPS** - Operations
+- **MKT** - Marketing
 
-3. **Backend serves frontend**:
-   The `dist/` folder is automatically served by Express at `/`
-
----
-
-## 📖 Additional Documentation
-
-- **[ENV_SETUP.md](./ENV_SETUP.md)** - Environment variables setup guide
-- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Complete API reference
+### Default Admin Account
+- Username: `admin`
+- Password: `admin123`
+- Email: `admin@example.com`
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Cannot connect to MongoDB
-- Check if MongoDB is running
-- Verify `MONGODB_URI` in `.env`
-- For Atlas: Check IP whitelist
+### Database Connection Issues
+```bash
+# Check MongoDB is running
+mongod --version
 
-### JWT errors
-- Verify `JWT_SECRET` is set in `.env`
-- Check token format in Authorization header
+# Verify connection string in .env
+MONGODB_URI=mongodb://localhost:27017/martApp
+```
 
-### Port already in use
-- Change `PORT` in `.env`
-- Or kill process: `lsof -ti:3001 | xargs kill`
+### Migration Issues
+```bash
+# If migration fails, check:
+1. Roles exist in database (npm run seed:roles)
+2. MongoDB connection is stable
+3. No duplicate user data
+```
+
+### Authentication Issues
+```bash
+# Verify JWT secret is set
+SECRET=your-secret-key
+
+# Check token expiration
+# Tokens expire after 7 days by default
+```
 
 ---
 
-**Last Updated**: October 5, 2025  
-**Backend Version**: 0.0.1  
-**Status**: ✅ Complete & Ready for Integration
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 👥 Authors
+
+- **Phat Nguyen** - [PhatNguyenTT2](https://github.com/PhatNguyenTT2)
+
+---
+
+## 🙏 Acknowledgments
+
+- Express.js team for the excellent web framework
+- MongoDB team for the powerful database
+- All contributors and supporters
+
+---
+
+## 📞 Support
+
+If you have any questions or need help, please:
+
+- 📧 Email: [your-email@example.com]
+- 🐛 Issues: [GitHub Issues](https://github.com/PhatNguyenTT2/mini-store/issues)
+- 📖 Docs: See `MIGRATION_GUIDE.md` and `SETUP_SCRIPTS.md`
+
+---
+
+## 🎉 Status: Production Ready! ✅
+
+This backend system is now complete with:
+- ✅ Full CRUD operations for all resources
+- ✅ Advanced role-based access control
+- ✅ Department-based organization
+- ✅ Comprehensive API documentation
+- ✅ Migration tools and guides
+- ✅ Production-ready setup
+
+**Happy Coding! 🚀**
+
+---
+
+Made with ❤️ by the Mini Store Team

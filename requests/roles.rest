@@ -1,0 +1,216 @@
+### Variables
+@baseUrl = http://localhost:3001/api
+
+### ============================================
+### AUTHENTICATION (Run this first to get token)
+### ============================================
+
+### Login to get token
+# @name loginResponse
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Extract token from login response
+@token = {{loginResponse.response.body.data.token}}
+
+### ============================================
+### ROLES - GET Operations
+### ============================================
+
+### 1. Get All Roles
+GET {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+
+### 2. Get Roles with Pagination
+GET {{baseUrl}}/roles?page=1&per_page=10
+Authorization: Bearer {{token}}
+
+### 3. Filter Active Roles
+GET {{baseUrl}}/roles?is_active=true
+Authorization: Bearer {{token}}
+
+### 4. Get Single Role by ID (replace with actual ID)
+# @name getRoleResponse
+GET {{baseUrl}}/roles/67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+
+### 5. Get Role by Role Code
+GET {{baseUrl}}/roles/code/ADMIN
+Authorization: Bearer {{token}}
+
+### ============================================
+### ROLES - POST Operations (Admin Only)
+### ============================================
+
+### 6. Create New Role - Admin
+# @name createAdminRole
+POST {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roleId": "ADMIN",
+  "roleName": "Administrator",
+  "description": "Full system access with all permissions",
+  "permissions": [
+    "users.read",
+    "users.write",
+    "users.delete",
+    "products.read",
+    "products.write",
+    "products.delete",
+    "orders.read",
+    "orders.write",
+    "orders.delete",
+    "reports.read",
+    "settings.manage"
+  ],
+  "isActive": true
+}
+
+### 7. Create New Role - Manager
+# @name createManagerRole
+POST {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roleId": "MANAGER",
+  "roleName": "Manager",
+  "description": "Department manager with team oversight",
+  "permissions": [
+    "users.read",
+    "products.read",
+    "products.write",
+    "orders.read",
+    "orders.write",
+    "reports.read"
+  ],
+  "isActive": true
+}
+
+### 8. Create New Role - Employee
+# @name createEmployeeRole
+POST {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roleId": "EMPLOYEE",
+  "roleName": "Employee",
+  "description": "Basic employee access",
+  "permissions": [
+    "products.read",
+    "orders.read",
+    "orders.write"
+  ],
+  "isActive": true
+}
+
+### 9. Create New Role - User (Customer)
+# @name createUserRole
+POST {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roleId": "USER",
+  "roleName": "Customer",
+  "description": "Regular customer access",
+  "permissions": [
+    "products.read",
+    "orders.read",
+    "profile.manage"
+  ],
+  "isActive": true
+}
+
+### ============================================
+### ROLES - PUT Operations (Admin Only)
+### ============================================
+
+### 10. Update Role (replace with actual ID)
+PUT {{baseUrl}}/roles/67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roleName": "Administrator - Updated",
+  "description": "Updated description for admin role",
+  "permissions": [
+    "users.read",
+    "users.write",
+    "users.delete",
+    "products.read",
+    "products.write",
+    "products.delete",
+    "orders.read",
+    "orders.write",
+    "orders.delete",
+    "reports.read",
+    "reports.write",
+    "settings.manage",
+    "system.configure"
+  ],
+  "isActive": true
+}
+
+### ============================================
+### ROLES - PATCH Operations (Admin Only)
+### ============================================
+
+### 11. Toggle Role Active Status (replace with actual ID)
+PATCH {{baseUrl}}/roles/67654a6f8e123456789abcde/toggle
+Authorization: Bearer {{token}}
+
+### ============================================
+### ROLES - DELETE Operations (Admin Only)
+### ============================================
+
+### 12. Delete Role (replace with actual ID)
+# WARNING: Cannot delete if role is assigned to users
+DELETE {{baseUrl}}/roles/67654a6f8e123456789abcde
+Authorization: Bearer {{token}}
+
+### ============================================
+### ERROR TEST CASES
+### ============================================
+
+### 13. Create Role with Duplicate ID (should fail)
+POST {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roleId": "ADMIN",
+  "roleName": "Duplicate Admin"
+}
+
+### 14. Create Role without Required Fields (should fail)
+POST {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "description": "Missing required fields"
+}
+
+### 15. Get Role with Invalid ID (should fail)
+GET {{baseUrl}}/roles/invalid-id
+Authorization: Bearer {{token}}
+
+### 16. Access without Token (should fail)
+GET {{baseUrl}}/roles
+
+### ============================================
+### NOTES
+### ============================================
+# Replace placeholder IDs (67654a6f8e123456789abcde) with actual IDs from your database
+# Make sure to run the Login request first to get a valid token
+# All POST, PUT, PATCH, DELETE operations require Admin role
+# GET operations require authentication but any role can access
