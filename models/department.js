@@ -52,7 +52,7 @@ const departmentSchema = new mongoose.Schema({
   })
 
 // Indexes for better query performance
-departmentSchema.index({ departmentId: 1 })
+// Note: departmentId already has index from 'unique: true'
 departmentSchema.index({ isActive: 1 })
 departmentSchema.index({ manager: 1 })
 

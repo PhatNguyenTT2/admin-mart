@@ -1,6 +1,14 @@
 const mongoose = require('mongoose')
 
 const userSchema = new mongoose.Schema({
+  userCode: {
+    type: String,
+    required: [true, 'User code is required'],
+    unique: true,
+    uppercase: true,
+    trim: true,
+    match: [/^EMP\d{3,}$/, 'User code must follow format EMP001, EMP002, etc.']
+  },
   username: {
     type: String,
     required: [true, 'Username is required'],
@@ -68,6 +76,12 @@ const userSchema = new mongoose.Schema({
     timestamps: true
   }
 )
+
+// Indexes for better query performance
+// Note: userCode, username, email already have indexes from 'unique: true'
+userSchema.index({ isActive: 1 })
+userSchema.index({ role: 1 })
+userSchema.index({ department: 1 })
 
 userSchema.set('toJSON', {
   transform: (document, returnedObject) => {

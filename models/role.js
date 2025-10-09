@@ -36,7 +36,7 @@ const roleSchema = new mongoose.Schema({
   })
 
 // Indexes for better query performance
-roleSchema.index({ roleId: 1 })
+// Note: roleId already has index from 'unique: true'
 roleSchema.index({ isActive: 1 })
 
 roleSchema.set('toJSON', {

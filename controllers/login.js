@@ -5,6 +5,25 @@ const User = require('../models/user')
 const Role = require('../models/role')
 const { userExtractor } = require('../utils/auth')
 
+// Helper function to generate next userCode
+const generateUserCode = async () => {
+  const lastUser = await User.findOne()
+    .sort({ userCode: -1 })
+    .limit(1)
+    .select('userCode')
+
+  if (!lastUser || !lastUser.userCode) {
+    return 'EMP001'
+  }
+
+  // Extract number from userCode (e.g., EMP001 -> 1)
+  const lastNumber = parseInt(lastUser.userCode.substring(3))
+  const newNumber = lastNumber + 1
+
+  // Format with leading zeros (e.g., 1 -> EMP001, 25 -> EMP025)
+  return `EMP${String(newNumber).padStart(3, '0')}`
+}
+
 // Helper: Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign(
@@ -116,6 +135,9 @@ loginRouter.post('/register', async (request, response) => {
       })
     }
 
+    // Generate userCode
+    const userCode = await generateUserCode()
+
     // Hash password
     const saltRounds = 10
     const passwordHash = await bcrypt.hash(password, saltRounds)
@@ -130,6 +152,7 @@ loginRouter.post('/register', async (request, response) => {
 
     // Create new user
     const user = new User({
+      userCode,
       username,
       email,
       fullName,

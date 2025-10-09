@@ -94,7 +94,7 @@ Content-Type: application/json
 
 {
   "email": "newemail@example.com",
-  "fullName": "Updated Full Name"
+  "fullName": "Super Admin"
 }
 
 ### 10. Update User - Change Password
