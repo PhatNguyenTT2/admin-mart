@@ -36,24 +36,32 @@ suppliersRouter.get('/', async (request, response) => {
       ]
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit)
+    const pageNum = parseInt(page)
+    const perPage = parseInt(limit)
+    const skip = (pageNum - 1) * perPage
 
     const suppliers = await Supplier
       .find(filter)
       .sort(sort)
-      .limit(parseInt(limit))
+      .limit(perPage)
       .skip(skip)
       .populate('productsSupplied', 'name sku')
 
     const total = await Supplier.countDocuments(filter)
+    const totalPages = Math.ceil(total / perPage)
 
     response.json({
-      suppliers,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+      success: true,
+      data: {
+        suppliers,
+        pagination: {
+          current_page: pageNum,
+          per_page: perPage,
+          total,
+          total_pages: totalPages,
+          has_next: pageNum < totalPages,
+          has_prev: pageNum > 1
+        }
       }
     })
   } catch (error) {

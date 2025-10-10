@@ -1,6 +1,7 @@
 const ordersRouter = require('express').Router()
 const Order = require('../models/order')
 const Product = require('../models/product')
+const Inventory = require('../models/inventory')
 const { userExtractor, isAdmin } = require('../utils/auth')
 
 // GET /api/orders - Get all orders (Admin only)
@@ -207,9 +208,9 @@ ordersRouter.post('/', async (request, response) => {
 
       subtotal += itemSubtotal
 
-      // Reduce stock
-      product.stock -= item.quantity
-      await product.save()
+      // NOTE: Do NOT reduce stock immediately when order is created
+      // Stock will be reserved instead (see below)
+      // Stock will only be deducted when order is shipped
     }
 
     // Calculate shipping, tax, total
@@ -236,9 +237,51 @@ ordersRouter.post('/', async (request, response) => {
     const savedOrder = await order.save()
     await savedOrder.populate('items.product', 'name image')
 
+    // Reserve stock for each item in the order
+    try {
+      for (const item of orderItems) {
+        let inventory = await Inventory.findOne({ product: item.product })
+
+        if (!inventory) {
+          // Create inventory if doesn't exist
+          inventory = new Inventory({
+            product: item.product,
+            quantityOnHand: 0,
+            reorderPoint: 10,
+            reorderQuantity: 50
+          })
+        }
+
+        // Check if enough available stock
+        if (inventory.quantityAvailable < item.quantity) {
+          throw new Error(`Insufficient available stock for ${item.productName}`)
+        }
+
+        // Reserve stock
+        inventory.quantityReserved += item.quantity
+        inventory.movements.push({
+          type: 'reserved',
+          quantity: item.quantity,
+          reason: 'Order created - stock reserved',
+          referenceType: 'order',
+          referenceId: savedOrder._id.toString(),
+          performedBy: request.user ? request.user._id : null,
+          date: new Date()
+        })
+
+        await inventory.save()
+      }
+    } catch (reserveError) {
+      // If reservation fails, delete the order and return error
+      await Order.findByIdAndDelete(savedOrder._id)
+      return response.status(400).json({
+        error: reserveError.message || 'Failed to reserve stock'
+      })
+    }
+
     response.status(201).json({
       success: true,
-      message: 'Order created successfully',
+      message: 'Order created successfully and stock reserved',
       data: { order: savedOrder }
     })
   } catch (error) {
@@ -281,22 +324,76 @@ ordersRouter.patch('/:id/status', userExtractor, isAdmin, async (request, respon
       case 'processing':
         order.processingAt = new Date()
         break
+
       case 'shipping':
         order.shippedAt = new Date()
+
+        // Stock out: Actually deduct from inventory when shipping
+        for (const item of order.items) {
+          let inventory = await Inventory.findOne({ product: item.product })
+
+          if (!inventory) {
+            throw new Error(`Inventory not found for product ${item.productName}`)
+          }
+
+          // Deduct from on hand
+          inventory.quantityOnHand -= item.quantity
+
+          // Release from reserved
+          if (inventory.quantityReserved >= item.quantity) {
+            inventory.quantityReserved -= item.quantity
+          }
+
+          // Add stock-out movement
+          inventory.movements.push({
+            type: 'out',
+            quantity: item.quantity,
+            reason: 'Order shipped to customer',
+            referenceType: 'order',
+            referenceId: order._id.toString(),
+            performedBy: request.user.id,
+            date: new Date()
+          })
+
+          inventory.lastSold = new Date()
+          await inventory.save()
+
+          // Sync Product.stock
+          const product = await Product.findById(item.product)
+          if (product) {
+            product.stock = inventory.quantityOnHand
+            await product.save()
+          }
+        }
         break
+
       case 'delivered':
         order.deliveredAt = new Date()
         order.paymentStatus = 'paid'
         order.paidAt = new Date()
         break
+
       case 'cancelled':
         order.cancelledAt = new Date()
-        // Restore stock
+
+        // Release reserved stock (do NOT add back to onHand)
         for (const item of order.items) {
-          const product = await Product.findById(item.product)
-          if (product) {
-            product.stock += item.quantity
-            await product.save()
+          let inventory = await Inventory.findOne({ product: item.product })
+
+          if (inventory && inventory.quantityReserved >= item.quantity) {
+            inventory.quantityReserved -= item.quantity
+
+            inventory.movements.push({
+              type: 'released',
+              quantity: item.quantity,
+              reason: 'Order cancelled - stock released',
+              referenceType: 'order',
+              referenceId: order._id.toString(),
+              performedBy: request.user.id,
+              date: new Date()
+            })
+
+            await inventory.save()
           }
         }
         break

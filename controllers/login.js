@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt')
 const loginRouter = require('express').Router()
 const User = require('../models/user')
 const Role = require('../models/role')
+const Department = require('../models/department')
 const { userExtractor } = require('../utils/auth')
 
 // Helper function to generate next userCode
@@ -45,8 +46,10 @@ loginRouter.post('/', async (request, response) => {
   }
 
   try {
-    // Find user and populate role
-    const user = await User.findOne({ username }).populate('role', 'roleId roleName')
+    // Find user and populate role and department
+    const user = await User.findOne({ username })
+      .populate('role', 'roleId roleName')
+      .populate('department', 'departmentId departmentName')
 
     if (!user) {
       return response.status(401).json({
@@ -88,7 +91,8 @@ loginRouter.post('/', async (request, response) => {
           username: user.username,
           email: user.email,
           fullName: user.fullName,
-          role: user.role
+          role: user.role,
+          department: user.department
         }
       }
     })
@@ -150,6 +154,20 @@ loginRouter.post('/register', async (request, response) => {
       })
     }
 
+    // Find or create default department
+    let defaultDepartment = await Department.findOne({ departmentId: 'GENERAL' })
+    if (!defaultDepartment) {
+      // Create default department if it doesn't exist
+      defaultDepartment = new Department({
+        departmentId: 'GENERAL',
+        departmentName: 'General',
+        description: 'Default department for users without specific department assignment',
+        location: 'Main Office',
+        isActive: true
+      })
+      await defaultDepartment.save()
+    }
+
     // Create new user
     const user = new User({
       userCode,
@@ -158,10 +176,17 @@ loginRouter.post('/register', async (request, response) => {
       fullName,
       passwordHash,
       role: adminRole._id, // Use ObjectId reference to Role
+      department: defaultDepartment._id, // Use ObjectId reference to Department
       isActive: true
     })
 
     const savedUser = await user.save()
+
+    // Populate role and department for response
+    const populatedUser = await User.findById(savedUser._id)
+      .populate('role', 'roleId roleName')
+      .populate('department', 'departmentId departmentName')
+      .select('-passwordHash -tokens')
 
     // Return success (no auto-login, user needs to login)
     response.status(201).json({
@@ -169,11 +194,12 @@ loginRouter.post('/register', async (request, response) => {
       message: 'Registration successful. Please login.',
       data: {
         user: {
-          id: savedUser._id,
-          username: savedUser.username,
-          email: savedUser.email,
-          fullName: savedUser.fullName,
-          role: savedUser.role
+          id: populatedUser._id,
+          username: populatedUser.username,
+          email: populatedUser.email,
+          fullName: populatedUser.fullName,
+          role: populatedUser.role,
+          department: populatedUser.department
         }
       }
     })
@@ -225,6 +251,7 @@ loginRouter.get('/me', userExtractor, async (request, response) => {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        department: user.department,
         isActive: user.isActive,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt

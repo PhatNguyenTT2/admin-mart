@@ -23,7 +23,7 @@ inventoryRouter.get('/', userExtractor, async (request, response) => {
     if (lowStock === 'true') {
       const inventory = await Inventory.find()
       const lowStockIds = inventory
-        .filter(inv => inv.quantityAvailable <= inv.reorderPoint)
+        .filter(inv => inv.quantityAvailable <= inv.reorderPoint && inv.quantityAvailable > 0)
         .map(inv => inv._id)
       filter._id = { $in: lowStockIds }
     }
@@ -32,25 +32,33 @@ inventoryRouter.get('/', userExtractor, async (request, response) => {
       filter.quantityAvailable = 0
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit)
+    const pageNum = parseInt(page)
+    const perPage = parseInt(limit)
+    const skip = (pageNum - 1) * perPage
 
     const inventoryItems = await Inventory
       .find(filter)
       .sort(sort)
-      .limit(parseInt(limit))
+      .limit(perPage)
       .skip(skip)
       .populate('product', 'name sku price vendor')
       .populate('movements.performedBy', 'username')
 
     const total = await Inventory.countDocuments(filter)
+    const totalPages = Math.ceil(total / perPage)
 
     response.json({
-      inventory: inventoryItems,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
+      success: true,
+      data: {
+        inventory: inventoryItems,
+        pagination: {
+          current_page: pageNum,
+          per_page: perPage,
+          total,
+          total_pages: totalPages,
+          has_next: pageNum < totalPages,
+          has_prev: pageNum > 1
+        }
       }
     })
   } catch (error) {
@@ -63,7 +71,7 @@ inventoryRouter.get('/stats/summary', userExtractor, async (request, response) =
   try {
     const totalItems = await Inventory.countDocuments()
     const allInventory = await Inventory.find().populate('product', 'name sku price')
-    
+
     const lowStockItems = allInventory.filter(inv => inv.quantityAvailable <= inv.reorderPoint && inv.quantityAvailable > 0)
     const outOfStockItems = allInventory.filter(inv => inv.quantityAvailable === 0)
     const reorderNeeded = allInventory.filter(inv => inv.quantityAvailable <= inv.reorderPoint)
