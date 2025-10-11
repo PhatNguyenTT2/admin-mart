@@ -67,7 +67,7 @@ const inventorySchema = new mongoose.Schema({
       trim: true
     },
     referenceId: {
-      type: String, // Order ID, PO ID, etc.
+      type: String,
       trim: true
     },
     referenceType: {
@@ -235,6 +235,30 @@ inventorySchema.virtual('turnoverInfo').get(function () {
     averagePerDay: totalOut / 30
   }
 })
+
+// Static method to get reserved items by order
+inventorySchema.statics.getReservedByOrder = async function (orderId) {
+  const inventories = await this.find({
+    'movements': {
+      $elemMatch: {
+        type: 'reserved',
+        referenceId: orderId,
+        referenceType: 'order'
+      }
+    }
+  }).populate('product')
+
+  return inventories.map(inv => {
+    const reservedMovement = inv.movements.find(
+      m => m.type === 'reserved' && m.referenceId === orderId
+    )
+    return {
+      product: inv.product,
+      quantityReserved: reservedMovement?.quantity || 0,
+      inventory: inv
+    }
+  }).filter(item => item.quantityReserved > 0)
+}
 
 inventorySchema.set('toJSON', {
   transform: (document, returnedObject) => {

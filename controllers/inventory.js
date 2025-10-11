@@ -43,6 +43,16 @@ inventoryRouter.get('/', userExtractor, async (request, response) => {
       .skip(skip)
       .populate('product', 'name sku price vendor')
       .populate('movements.performedBy', 'username')
+      .lean() // Convert to plain JavaScript objects
+
+    // Filter out items with null/undefined products
+    const validInventoryItems = inventoryItems.filter(item => {
+      if (!item.product) {
+        console.warn('Found inventory item without product:', item._id)
+        return false
+      }
+      return true
+    })
 
     const total = await Inventory.countDocuments(filter)
     const totalPages = Math.ceil(total / perPage)
@@ -50,7 +60,7 @@ inventoryRouter.get('/', userExtractor, async (request, response) => {
     response.json({
       success: true,
       data: {
-        inventory: inventoryItems,
+        inventory: validInventoryItems,
         pagination: {
           current_page: pageNum,
           per_page: perPage,
@@ -62,7 +72,12 @@ inventoryRouter.get('/', userExtractor, async (request, response) => {
       }
     })
   } catch (error) {
-    response.status(500).json({ error: error.message })
+    console.error('Error in GET /api/inventory:', error)
+    response.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    })
   }
 })
 
