@@ -29,7 +29,14 @@ const orderSchema = new mongoose.Schema({
     default: null
   },
 
-  // Shipping address
+  // Delivery type
+  deliveryType: {
+    type: String,
+    enum: ['delivery', 'pickup'],
+    default: 'delivery'
+  },
+
+  // Shipping address (only required for delivery type)
   shippingAddress: {
     street: String,
     city: String,
@@ -82,6 +89,17 @@ const orderSchema = new mongoose.Schema({
   },
 
   discount: {
+    type: Number,
+    default: 0
+  },
+
+  discountType: {
+    type: String,
+    enum: ['none', 'retail', 'wholesale', 'vip'],
+    default: 'none'
+  },
+
+  discountPercentage: {
     type: Number,
     default: 0
   },

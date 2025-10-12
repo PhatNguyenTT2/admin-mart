@@ -2,6 +2,8 @@ const paymentsRouter = require('express').Router()
 const Payment = require('../models/payment')
 const Order = require('../models/order')
 const PurchaseOrder = require('../models/purchaseOrder')
+const Product = require('../models/product')
+const Inventory = require('../models/inventory')
 const Customer = require('../models/customer')
 const Supplier = require('../models/supplier')
 const { userExtractor } = require('../utils/auth')
@@ -239,7 +241,7 @@ paymentsRouter.post('/', userExtractor, async (request, response) => {
   }
 })
 
-// POST /api/payments/:id/refund - Process refund
+// POST /api/payments/:id/refund - Process refund with inventory management
 paymentsRouter.post('/:id/refund', userExtractor, async (request, response) => {
   try {
     const { amount, reason } = request.body
@@ -262,12 +264,46 @@ paymentsRouter.post('/:id/refund', userExtractor, async (request, response) => {
       return response.status(404).json({ error: 'Payment not found' })
     }
 
+    // Process refund (updates payment model)
     await payment.processRefund(amount, reason)
 
-    // Update order payment status if sales payment
+    // Handle inventory restoration for sales payments
     if (payment.paymentType === 'sales') {
-      const order = await Order.findById(payment.relatedOrderId)
+      const order = await Order.findById(payment.relatedOrderId).populate('items.product')
+
       if (order) {
+        // Restore inventory for each item in the order
+        for (const item of order.items) {
+          const inventory = await Inventory.findOne({ product: item.product._id })
+
+          if (inventory) {
+            // Find the 'out' movement for this order to get the exact quantity that was sold
+            const outMovement = inventory.movements.find(
+              m => m.type === 'out' &&
+                m.referenceId === payment.relatedOrderNumber &&
+                m.referenceType === 'order'
+            )
+
+            const quantityToRestore = outMovement ? outMovement.quantity : item.quantity
+
+            // Add stock back to inventory as adjustment (increase)
+            await inventory.adjustStockIncrease(
+              quantityToRestore,
+              `Refund: ${reason}`,
+              payment.relatedOrderNumber,
+              request.user.id
+            )
+
+            // Update product stock to match inventory
+            const product = await Product.findById(item.product._id)
+            if (product) {
+              product.stock = inventory.quantityAvailable
+              await product.save()
+            }
+          }
+        }
+
+        // Update order payment status
         const totalPaid = await Payment.aggregate([
           {
             $match: {
@@ -285,18 +321,24 @@ paymentsRouter.post('/:id/refund', userExtractor, async (request, response) => {
         } else if (paidAmount > 0) {
           order.paymentStatus = 'partial'
         } else {
-          order.paymentStatus = 'unpaid'
+          order.paymentStatus = 'refunded'
         }
 
         await order.save()
       }
     }
 
+    // Populate and return
+    await payment.populate('customer', 'customerCode fullName')
+    await payment.populate('supplier', 'supplierCode companyName')
+    await payment.populate('receivedBy', 'username')
+
     response.json({
-      message: 'Refund processed successfully',
+      message: 'Refund processed successfully. Inventory has been restored.',
       payment
     })
   } catch (error) {
+    console.error('Error processing refund:', error)
     response.status(400).json({ error: error.message })
   }
 })
@@ -353,6 +395,135 @@ paymentsRouter.put('/:id/fail', userExtractor, async (request, response) => {
       payment
     })
   } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
+// PUT /api/payments/:id/status - Update payment status with inventory management
+paymentsRouter.put('/:id/status', userExtractor, async (request, response) => {
+  try {
+    const { status } = request.body
+
+    // Validate status
+    const validStatuses = ['pending', 'completed', 'failed']
+    if (!validStatuses.includes(status)) {
+      return response.status(400).json({
+        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      })
+    }
+
+    const payment = await Payment.findById(request.params.id)
+    if (!payment) {
+      return response.status(404).json({ error: 'Payment not found' })
+    }
+
+    const oldStatus = payment.status
+
+    // Only allow status changes from pending
+    if (oldStatus !== 'pending' && oldStatus !== status) {
+      return response.status(400).json({
+        error: `Cannot change status from ${oldStatus}. Only pending payments can be updated.`
+      })
+    }
+
+    // If status is already the same, just return
+    if (oldStatus === status) {
+      return response.json({
+        message: 'Payment status is already ' + status,
+        payment
+      })
+    }
+
+    // Handle sales payments with inventory management
+    if (payment.paymentType === 'sales') {
+      const order = await Order.findById(payment.relatedOrderId).populate('items.product')
+
+      if (!order) {
+        return response.status(404).json({ error: 'Related order not found' })
+      }
+
+      // Process each item in the order
+      for (const item of order.items) {
+        const inventory = await Inventory.findOne({ product: item.product._id })
+
+        if (!inventory) {
+          return response.status(404).json({
+            error: `Inventory not found for product ${item.product.name}`
+          })
+        }
+
+        if (status === 'failed') {
+          // Release reserved stock back to available
+          await inventory.releaseStock(
+            item.quantity,
+            order.orderNumber,
+            request.user.id
+          )
+
+        } else if (status === 'completed') {
+          // Deduct from onHand and release from reserved
+          // First remove from onHand
+          await inventory.removeStock(
+            item.quantity,
+            'Payment completed',
+            order.orderNumber,
+            request.user.id
+          )
+
+          // Then release from reserved
+          await inventory.releaseStock(
+            item.quantity,
+            order.orderNumber,
+            request.user.id
+          )
+
+          // Update product stock
+          const product = await Product.findById(item.product._id)
+          if (product) {
+            product.stock = inventory.quantityAvailable
+            await product.save()
+          }
+        }
+      }
+
+      // Update order payment status
+      if (status === 'completed') {
+        order.paymentStatus = 'paid'
+        order.paidAt = new Date()
+
+        // Update customer totalSpent if customer exists
+        if (order.customer && order.customer.email) {
+          try {
+            const customer = await Customer.findOne({ email: order.customer.email })
+            if (customer) {
+              await customer.updatePurchaseStats(order.total)
+            }
+          } catch (customerError) {
+            console.error('Error updating customer stats:', customerError)
+            // Don't fail the payment if customer update fails
+          }
+        }
+      } else if (status === 'failed') {
+        order.paymentStatus = 'failed'
+      }
+      await order.save()
+    }
+
+    // Update payment status
+    payment.status = status
+    await payment.save()
+
+    // Populate and return
+    await payment.populate('customer', 'customerCode fullName')
+    await payment.populate('supplier', 'supplierCode companyName')
+    await payment.populate('receivedBy', 'username')
+
+    response.json({
+      message: `Payment status updated to ${status}`,
+      payment
+    })
+  } catch (error) {
+    console.error('Error updating payment status:', error)
     response.status(400).json({ error: error.message })
   }
 })

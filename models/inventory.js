@@ -211,8 +211,31 @@ inventorySchema.methods.adjustStock = function (newQuantity, reason, userId) {
   this.movements.push({
     type: 'adjustment',
     quantity: Math.abs(difference),
+    adjustmentType: difference > 0 ? 'increase' : 'decrease',
     reason: `${reason} (${difference > 0 ? '+' : ''}${difference})`,
     referenceType: 'adjustment',
+    performedBy: userId
+  })
+
+  return this.save()
+}
+
+// Method to add stock as adjustment (for refunds)
+inventorySchema.methods.adjustStockIncrease = function (quantity, reason, referenceId, userId) {
+  if (quantity <= 0) {
+    throw new Error('Quantity must be positive')
+  }
+
+  this.quantityOnHand += quantity
+  this.lastRestocked = new Date()
+
+  this.movements.push({
+    type: 'adjustment',
+    quantity,
+    adjustmentType: 'increase',
+    reason,
+    referenceId,
+    referenceType: 'order',
     performedBy: userId
   })
 

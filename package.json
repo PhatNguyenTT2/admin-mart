@@ -12,7 +12,10 @@
     "lint": "eslint .",
     "start:test": "cross-env NODE_ENV=test node --watch index.js",
     "setup": "node utils/completeSetup.js",
+    "setup:roles": "node scripts/setup-roles.js",
     "seed:roles": "node utils/seedRolesAndDepartments.js",
+    "seed:products": "node scripts/seed-products.js",
+    "seed:customers": "node scripts/seed-customers.js",
     "seed:admin": "node utils/seedAdmin.js",
     "migrate:users": "node utils/migrateUsersRole.js"
   },

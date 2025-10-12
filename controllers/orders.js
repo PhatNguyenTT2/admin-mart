@@ -2,6 +2,8 @@ const ordersRouter = require('express').Router()
 const Order = require('../models/order')
 const Product = require('../models/product')
 const Inventory = require('../models/inventory')
+const Payment = require('../models/payment')
+const Customer = require('../models/customer')
 const { userExtractor, isAdmin } = require('../utils/auth')
 
 // GET /api/orders - Get all orders (Admin only)
@@ -47,7 +49,7 @@ ordersRouter.get('/', userExtractor, isAdmin, async (request, response) => {
     // Execute query
     const orders = await Order.find(filter)
       .populate('user', 'username email fullName')
-      .populate('items.product', 'name image')
+      .populate('items.product', 'name image sku')
       .sort(sort)
       .skip(skip)
       .limit(perPage)
@@ -153,9 +155,10 @@ ordersRouter.get('/user/my-orders', userExtractor, async (request, response) => 
 })
 
 // POST /api/orders - Create new order
-ordersRouter.post('/', async (request, response) => {
+ordersRouter.post('/', userExtractor, async (request, response) => {
   const {
     customer,
+    deliveryType = 'delivery',
     shippingAddress,
     items,
     paymentMethod,
@@ -172,6 +175,13 @@ ordersRouter.post('/', async (request, response) => {
   if (!items || items.length === 0) {
     return response.status(400).json({
       error: 'Order must contain at least one item'
+    })
+  }
+
+  // Validate delivery type
+  if (deliveryType && !['delivery', 'pickup'].includes(deliveryType)) {
+    return response.status(400).json({
+      error: 'Invalid delivery type. Must be "delivery" or "pickup"'
     })
   }
 
@@ -213,20 +223,64 @@ ordersRouter.post('/', async (request, response) => {
       // Stock will only be deducted when order is shipped
     }
 
-    // Calculate shipping, tax, total
-    const shippingFee = subtotal > 100 ? 0 : 10 // Free shipping over $100
+    // Find customer to determine discount and customer type
+    let customerType = 'retail'
+    let discountPercentage = 0
+    let discount = 0
+    let isWalkIn = false
+
+    try {
+      const existingCustomer = await Customer.findOne({ email: customer.email })
+      if (existingCustomer) {
+        customerType = existingCustomer.customerType
+      } else {
+        // New customer or walk-in (not in database)
+        isWalkIn = true
+      }
+    } catch (err) {
+      // If customer lookup fails, default to retail walk-in
+      console.log('Customer lookup failed, defaulting to retail walk-in')
+      isWalkIn = true
+    }
+
+    // Calculate discount based on customer type
+    // Walk-in: No discount (will have shipping fee if delivery)
+    // Retail: freeship only (0% discount)
+    // Wholesale: freeship + 10% discount
+    // VIP: freeship + 15% discount
+    if (customerType === 'wholesale') {
+      discountPercentage = 10
+      discount = subtotal * 0.10
+    } else if (customerType === 'vip') {
+      discountPercentage = 15
+      discount = subtotal * 0.15
+    }
+
+    // Calculate shipping fee
+    // Walk-in customers: pay shipping fee if delivery ($10)
+    // Existing customers (retail/wholesale/vip): free shipping
+    // Pickup: always free
+    let shippingFee = 0
+    if (deliveryType === 'delivery' && isWalkIn) {
+      shippingFee = 10 // $10 shipping fee for walk-in customers
+    }
+
     const tax = subtotal * 0.1 // 10% tax
-    const total = subtotal + shippingFee + tax
+    const total = subtotal - discount + shippingFee + tax
 
     // Create order
     const order = new Order({
       customer,
-      user: request.user ? request.user._id : null, // Null for guest checkout
-      shippingAddress,
+      user: request.user._id, // User is required (from userExtractor middleware)
+      deliveryType: deliveryType || 'delivery',
+      shippingAddress: deliveryType === 'delivery' ? shippingAddress : undefined, // Only include if delivery
       items: orderItems,
       subtotal,
       shippingFee,
       tax,
+      discount,
+      discountType: customerType,
+      discountPercentage,
       total,
       paymentMethod: paymentMethod || 'cash',
       paymentStatus: 'pending',
@@ -235,7 +289,7 @@ ordersRouter.post('/', async (request, response) => {
     })
 
     const savedOrder = await order.save()
-    await savedOrder.populate('items.product', 'name image')
+    await savedOrder.populate('items.product', 'name image sku')
 
     // Reserve stock for each item in the order
     try {
@@ -264,24 +318,40 @@ ordersRouter.post('/', async (request, response) => {
           quantity: item.quantity,
           reason: 'Order created - stock reserved',
           referenceType: 'order',
-          referenceId: savedOrder._id.toString(),
-          performedBy: request.user ? request.user._id : null,
+          referenceId: savedOrder.orderNumber, // Use orderNumber instead of _id
+          performedBy: request.user._id,
           date: new Date()
         })
 
         await inventory.save()
       }
+
+      // Automatically create payment record for this order
+      const payment = new Payment({
+        paymentType: 'sales',
+        relatedOrderId: savedOrder._id,
+        relatedOrderNumber: savedOrder.orderNumber,
+        amount: total,
+        paymentMethod: paymentMethod || 'cash',
+        paymentDate: new Date(),
+        status: 'pending', // Will be updated when payment is confirmed
+        notes: `Auto-created payment for order ${savedOrder.orderNumber}. Customer: ${customer.name}`,
+        receivedBy: request.user._id
+      })
+
+      await payment.save()
+
     } catch (reserveError) {
-      // If reservation fails, delete the order and return error
+      // If reservation or payment creation fails, delete the order and return error
       await Order.findByIdAndDelete(savedOrder._id)
       return response.status(400).json({
-        error: reserveError.message || 'Failed to reserve stock'
+        error: reserveError.message || 'Failed to reserve stock or create payment'
       })
     }
 
     response.status(201).json({
       success: true,
-      message: 'Order created successfully and stock reserved',
+      message: 'Order created successfully with stock reserved and payment record created',
       data: { order: savedOrder }
     })
   } catch (error) {
