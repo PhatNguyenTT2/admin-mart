@@ -62,6 +62,11 @@ const inventorySchema = new mongoose.Schema({
       type: Number,
       required: true
     },
+    adjustmentType: {
+      type: String,
+      enum: ['increase', 'decrease'],
+      trim: true
+    },
     reason: {
       type: String,
       trim: true
@@ -72,7 +77,7 @@ const inventorySchema = new mongoose.Schema({
     },
     referenceType: {
       type: String,
-      enum: ['order', 'purchase_order', 'adjustment', 'return'],
+      enum: ['order', 'purchase_order', 'stock_adjustment', 'reservation', 'release', 'return'],
       trim: true
     },
     date: {

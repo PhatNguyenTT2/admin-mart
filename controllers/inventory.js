@@ -443,6 +443,146 @@ inventoryRouter.post('/adjust', userExtractor, async (request, response) => {
   }
 })
 
+// POST /api/inventory/:productId/adjust - Manual stock adjustment by product ID
+inventoryRouter.post('/:productId/adjust', userExtractor, async (request, response) => {
+  try {
+    const { productId } = request.params
+    const { type, quantity, adjustmentType, referenceType, referenceId, notes } = request.body
+
+    if (!quantity || quantity <= 0) {
+      return response.status(400).json({ error: 'Quantity must be positive' })
+    }
+
+    if (!type) {
+      return response.status(400).json({ error: 'Adjustment type is required' })
+    }
+
+    // Find or create inventory
+    let inventory = await Inventory.findOne({ product: productId }).populate('product')
+
+    if (!inventory) {
+      const productDoc = await Product.findById(productId)
+      if (!productDoc) {
+        return response.status(404).json({ error: 'Product not found' })
+      }
+
+      inventory = new Inventory({
+        product: productId,
+        quantityOnHand: 0,
+        quantityReserved: 0,
+        reorderPoint: 10,
+        reorderQuantity: 50
+      })
+    }
+
+    let movementReason = notes || ''
+    let actualQuantity = parseInt(quantity)
+
+    // Handle different adjustment types
+    if (type === 'adjustment') {
+      // Adjustment type: increase or decrease quantityOnHand
+      if (!adjustmentType || !['increase', 'decrease'].includes(adjustmentType)) {
+        return response.status(400).json({ error: 'adjustmentType must be "increase" or "decrease"' })
+      }
+
+      const changeAmount = adjustmentType === 'increase' ? actualQuantity : -actualQuantity
+      inventory.quantityOnHand = Math.max(0, inventory.quantityOnHand + changeAmount)
+
+      movementReason = movementReason || `Stock ${adjustmentType} by ${actualQuantity}`
+
+      inventory.movements.push({
+        type: 'adjustment',
+        quantity: actualQuantity,
+        adjustmentType: adjustmentType,
+        reason: movementReason,
+        notes: notes,
+        referenceType: referenceType || 'stock_adjustment',
+        referenceId: referenceId,
+        performedBy: request.user.id,
+        date: new Date()
+      })
+
+      if (adjustmentType === 'increase') {
+        inventory.lastRestocked = new Date()
+      }
+
+      // Update product stock
+      const productDoc = await Product.findById(productId)
+      if (productDoc) {
+        productDoc.stock = inventory.quantityOnHand
+        await productDoc.save()
+      }
+
+    } else if (type === 'reserved') {
+      // Reserved type: increase quantityReserved, decrease quantityAvailable
+      if (inventory.quantityAvailable < actualQuantity) {
+        return response.status(400).json({
+          error: 'Insufficient stock available to reserve',
+          available: inventory.quantityAvailable,
+          requested: actualQuantity
+        })
+      }
+
+      inventory.quantityReserved += actualQuantity
+      movementReason = movementReason || `Stock reserved: ${actualQuantity} units`
+
+      inventory.movements.push({
+        type: 'reserved',
+        quantity: actualQuantity,
+        reason: movementReason,
+        notes: notes,
+        referenceType: referenceType || 'reservation',
+        referenceId: referenceId,
+        performedBy: request.user.id,
+        date: new Date()
+      })
+
+    } else if (type === 'released') {
+      // Released type: decrease quantityReserved, increase quantityAvailable
+      if (inventory.quantityReserved < actualQuantity) {
+        return response.status(400).json({
+          error: 'Insufficient reserved stock to release',
+          reserved: inventory.quantityReserved,
+          requested: actualQuantity
+        })
+      }
+
+      inventory.quantityReserved -= actualQuantity
+      movementReason = movementReason || `Reserved stock released: ${actualQuantity} units`
+
+      inventory.movements.push({
+        type: 'released',
+        quantity: actualQuantity,
+        reason: movementReason,
+        notes: notes,
+        referenceType: referenceType || 'release',
+        referenceId: referenceId,
+        performedBy: request.user.id,
+        date: new Date()
+      })
+
+    } else {
+      return response.status(400).json({ error: 'Invalid adjustment type' })
+    }
+
+    await inventory.save()
+    await inventory.populate('product', 'name sku price')
+
+    response.json({
+      message: 'Stock adjusted successfully',
+      inventory,
+      type: type,
+      quantity: actualQuantity,
+      quantityOnHand: inventory.quantityOnHand,
+      quantityReserved: inventory.quantityReserved,
+      quantityAvailable: inventory.quantityAvailable
+    })
+  } catch (error) {
+    console.error('Error in adjust stock:', error)
+    response.status(400).json({ error: error.message })
+  }
+})
+
 // POST /api/inventory/reserve - Reserve stock for order
 inventoryRouter.post('/reserve', userExtractor, async (request, response) => {
   try {
