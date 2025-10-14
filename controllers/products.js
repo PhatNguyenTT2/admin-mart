@@ -15,11 +15,16 @@ productsRouter.get('/', async (request, response) => {
       sort_by,
       search,
       type,
-      in_stock
+      in_stock,
+      include_inactive
     } = request.query
 
     // Build filter object
-    const filter = { isActive: true }
+    // For admin panel: include inactive products when requested
+    const filter = {}
+    if (include_inactive !== 'true') {
+      filter.isActive = true
+    }
 
     // Category filter
     if (category) {
@@ -161,10 +166,10 @@ productsRouter.post('/', userExtractor, isAdmin, async (request, response) => {
     isFeatured
   } = request.body
 
-  // Validation
-  if (!name || !sku || !category || !price || !image || !description || !vendor) {
+  // Validation (SKU and description are optional, will be auto-generated/defaulted)
+  if (!name || !category || !price || !image || !vendor) {
     return response.status(400).json({
-      error: 'Required fields: name, sku, category, price, image, description, vendor'
+      error: 'Required fields: name, category, price, image, vendor'
     })
   }
 
@@ -177,10 +182,27 @@ productsRouter.post('/', userExtractor, isAdmin, async (request, response) => {
       })
     }
 
+    // Generate SKU if not provided
+    let generatedSku = sku ? sku.toUpperCase() : null
+    if (!generatedSku) {
+      // Generate SKU: First 3 letters of name + random 5-digit number
+      const namePrefix = name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X')
+      const randomNum = Math.floor(10000 + Math.random() * 90000)
+      generatedSku = `${namePrefix}${randomNum}`
+
+      // Check if SKU already exists, regenerate if needed
+      let skuExists = await Product.findOne({ sku: generatedSku })
+      while (skuExists) {
+        const newRandomNum = Math.floor(10000 + Math.random() * 90000)
+        generatedSku = `${namePrefix}${newRandomNum}`
+        skuExists = await Product.findOne({ sku: generatedSku })
+      }
+    }
+
     // Create product
     const product = new Product({
       name,
-      sku: sku.toUpperCase(),
+      sku: generatedSku,
       category,
       price,
       originalPrice,
@@ -229,7 +251,6 @@ productsRouter.post('/', userExtractor, isAdmin, async (request, response) => {
 productsRouter.put('/:id', userExtractor, isAdmin, async (request, response) => {
   const {
     name,
-    sku,
     category,
     price,
     originalPrice,
@@ -249,6 +270,8 @@ productsRouter.put('/:id', userExtractor, isAdmin, async (request, response) => 
     isActive
   } = request.body
 
+  // Note: SKU is intentionally excluded - it cannot be modified after creation
+
   try {
     // Verify category if provided
     if (category) {
@@ -260,12 +283,22 @@ productsRouter.put('/:id', userExtractor, isAdmin, async (request, response) => 
       }
     }
 
-    // Update product
+    // If trying to deactivate product, check stock first
+    if (isActive === false) {
+      const currentProduct = await Product.findById(request.params.id)
+      if (currentProduct && currentProduct.stock > 0) {
+        return response.status(400).json({
+          error: 'Cannot deactivate product with stock. Please reduce stock to 0 first.',
+          stock: currentProduct.stock
+        })
+      }
+    }
+
+    // Update product (SKU is excluded from update)
     const updatedProduct = await Product.findByIdAndUpdate(
       request.params.id,
       {
         name,
-        sku: sku ? sku.toUpperCase() : undefined,
         category,
         price,
         originalPrice,
@@ -322,13 +355,25 @@ productsRouter.put('/:id', userExtractor, isAdmin, async (request, response) => 
 // DELETE /api/products/:id - Delete product (Admin only)
 productsRouter.delete('/:id', userExtractor, isAdmin, async (request, response) => {
   try {
-    const product = await Product.findByIdAndDelete(request.params.id)
+    // First, find the product to check status
+    const product = await Product.findById(request.params.id)
 
     if (!product) {
       return response.status(404).json({
         error: 'Product not found'
       })
     }
+
+    // Prevent deletion if product is still active
+    if (product.isActive !== false) {
+      return response.status(400).json({
+        error: 'Cannot delete active product. Please deactivate the product first.',
+        isActive: product.isActive
+      })
+    }
+
+    // If product is inactive, proceed with deletion
+    await Product.findByIdAndDelete(request.params.id)
 
     response.status(200).json({
       success: true,

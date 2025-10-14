@@ -6,7 +6,15 @@ const { userExtractor, isAdmin } = require('../utils/auth')
 // GET /api/categories - Get all categories
 categoriesRouter.get('/', async (request, response) => {
   try {
-    const categories = await Category.find({ isActive: true })
+    const { include_inactive } = request.query
+
+    // For admin panel: include inactive categories when requested
+    const filter = {}
+    if (include_inactive !== 'true') {
+      filter.isActive = true
+    }
+
+    const categories = await Category.find(filter)
       .populate('productCount')
       .sort({ order: 1, name: 1 })
 
@@ -25,6 +33,7 @@ categoriesRouter.get('/', async (request, response) => {
           image: category.image,
           description: category.description,
           order: category.order,
+          isActive: category.isActive,
           productCount,
           createdAt: category.createdAt,
           updatedAt: category.updatedAt
@@ -185,6 +194,23 @@ categoriesRouter.put('/:id', userExtractor, isAdmin, async (request, response) =
   const { name, image, description, order, isActive } = request.body
 
   try {
+    // If trying to deactivate, check if category has active products
+    if (isActive === false) {
+      const category = await Category.findById(request.params.id)
+      if (category) {
+        const activeProductCount = await Product.countDocuments({
+          category: category._id,
+          isActive: true
+        })
+
+        if (activeProductCount > 0) {
+          return response.status(400).json({
+            error: `Cannot deactivate category with ${activeProductCount} active product(s). Please deactivate all products first.`
+          })
+        }
+      }
+    }
+
     const updatedCategory = await Category.findByIdAndUpdate(
       request.params.id,
       { name, image, description, order, isActive },
@@ -236,24 +262,33 @@ categoriesRouter.put('/:id', userExtractor, isAdmin, async (request, response) =
 // DELETE /api/categories/:id - Delete category (Admin only)
 categoriesRouter.delete('/:id', userExtractor, isAdmin, async (request, response) => {
   try {
-    // Check if category has products
-    const productCount = await Product.countDocuments({
-      category: request.params.id
-    })
-
-    if (productCount > 0) {
-      return response.status(400).json({
-        error: `Cannot delete category with ${productCount} products. Please reassign or delete products first.`
-      })
-    }
-
-    const category = await Category.findByIdAndDelete(request.params.id)
+    const category = await Category.findById(request.params.id)
 
     if (!category) {
       return response.status(404).json({
         error: 'Category not found'
       })
     }
+
+    // Check if category is still active
+    if (category.isActive !== false) {
+      return response.status(400).json({
+        error: 'Cannot delete active category. Please deactivate it first.'
+      })
+    }
+
+    // Check if category has ANY products (active or inactive)
+    const productCount = await Product.countDocuments({
+      category: request.params.id
+    })
+
+    if (productCount > 0) {
+      return response.status(400).json({
+        error: `Cannot delete category with ${productCount} product(s). Please reassign or delete all products first.`
+      })
+    }
+
+    await Category.findByIdAndDelete(request.params.id)
 
     response.status(200).json({
       success: true,
