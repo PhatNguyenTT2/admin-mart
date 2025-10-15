@@ -592,4 +592,44 @@ ordersRouter.get('/stats/dashboard', userExtractor, isAdmin, async (request, res
   }
 })
 
+// DELETE /api/orders/:id - Delete an order (Admin only)
+// Only allows deletion of orders with specific payment statuses
+ordersRouter.delete('/:id', userExtractor, isAdmin, async (request, response) => {
+  try {
+    const orderId = request.params.id
+
+    // Find the order
+    const order = await Order.findById(orderId)
+
+    if (!order) {
+      return response.status(404).json({
+        error: 'Order not found'
+      })
+    }
+
+    // Validation: Only allow deletion of orders with specific payment statuses
+    const allowedPaymentStatuses = ['paid', 'failed', 'refunded']
+
+    if (!allowedPaymentStatuses.includes(order.paymentStatus.toLowerCase())) {
+      return response.status(400).json({
+        error: `Cannot delete order with payment status '${order.paymentStatus}'. Only orders with payment status 'Paid', 'Failed', or 'Refunded' can be deleted.`
+      })
+    }
+
+    // Delete the order
+    await Order.findByIdAndDelete(orderId)
+
+    response.status(200).json({
+      success: true,
+      message: 'Order deleted successfully',
+      data: { id: orderId }
+    })
+  } catch (error) {
+    console.error('Error deleting order:', error)
+    response.status(500).json({
+      error: 'Failed to delete order'
+    })
+  }
+})
+
 module.exports = ordersRouter

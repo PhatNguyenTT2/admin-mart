@@ -1,7 +1,7 @@
 const customersRouter = require('express').Router()
 const Customer = require('../models/customer')
 const Order = require('../models/order')
-const { userExtractor } = require('../utils/auth')
+const { userExtractor, isAdmin } = require('../utils/auth')
 
 // GET /api/customers - Get all customers with filtering, sorting, and pagination
 customersRouter.get('/', async (request, response) => {
@@ -520,27 +520,25 @@ customersRouter.put('/:id/loyalty/redeem', userExtractor, async (request, respon
   }
 })
 
-// DELETE /api/customers/:id - Delete customer (soft delete by default)
-customersRouter.delete('/:id', userExtractor, async (request, response) => {
+// DELETE /api/customers/:id - Delete customer (only inactive customers can be deleted)
+customersRouter.delete('/:id', userExtractor, isAdmin, async (request, response) => {
   try {
-    const { permanent = false } = request.query
-
     const customer = await Customer.findById(request.params.id)
 
     if (!customer) {
       return response.status(404).json({ error: 'Customer not found' })
     }
 
-    if (permanent === 'true') {
-      // Permanent delete
-      await Customer.findByIdAndDelete(request.params.id)
-      response.json({ message: 'Customer deleted permanently' })
-    } else {
-      // Soft delete
-      customer.isActive = false
-      await customer.save()
-      response.json({ message: 'Customer deactivated successfully' })
+    // Only allow deletion of inactive customers
+    if (customer.isActive) {
+      return response.status(400).json({
+        error: 'Cannot delete active customer. Please deactivate the customer first.'
+      })
     }
+
+    // Delete the customer
+    await Customer.findByIdAndDelete(request.params.id)
+    response.json({ message: 'Customer deleted successfully' })
   } catch (error) {
     response.status(500).json({ error: error.message })
   }
