@@ -526,30 +526,21 @@ Content-Type: application/json
 ### ============================================
 
 # Purchase Order Status Workflow:
-# 1. draft → Created but not submitted
-# 2. pending → Submitted, awaiting approval
-# 3. approved → Approved, sent to supplier
-# 4. received → Goods received, PO complete
-# 5. cancelled → PO cancelled/rejected
-#
-# Receiving Status:
-# - not_received: No goods received yet
-# - partially_received: Some items received
-# - fully_received: All items received
+# 1. pending → Created, awaiting approval
+# 2. approved → Approved, sent to supplier (stock updated)
+# 3. received → Goods confirmed received
+# 4. cancelled → PO cancelled/rejected
 #
 # Auto-Generated Fields:
 # - poNumber: PO2025000001 (auto-incremented)
 # - orderDate: Current timestamp
 # - createdBy: Current logged-in user
+# - status: 'pending' (default)
 #
 # Business Logic:
-# 1. Draft PO can be edited
-# 2. Pending PO awaits approval (manager only)
-# 3. Approved PO sent to supplier (no more edits)
-# 4. Receiving process:
-#    - Can receive partially
-#    - Track damaged items
-#    - Multiple receipts for one PO
+# 1. Pending PO can be edited
+# 2. Approved/Received PO updates inventory automatically
+# 3. Cancelled PO cannot be edited
 # 5. Upon receiving:
 #    - Update inventory stock levels
 #    - Create inventory movement records

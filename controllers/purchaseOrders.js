@@ -2,6 +2,7 @@ const purchaseOrdersRouter = require('express').Router()
 const PurchaseOrder = require('../models/purchaseOrder')
 const Supplier = require('../models/supplier')
 const Product = require('../models/product')
+const Payment = require('../models/payment')
 const { userExtractor } = require('../utils/auth')
 
 // GET /api/purchase-orders - Get all purchase orders with filtering
@@ -178,6 +179,35 @@ purchaseOrdersRouter.post('/', userExtractor, async (request, response) => {
 
     const savedPurchaseOrder = await purchaseOrder.save()
 
+    // Update supplier's current debt (add to debt when creating PO)
+    try {
+      await supplierDoc.addDebt(savedPurchaseOrder.total)
+    } catch (debtError) {
+      console.error('Error updating supplier debt:', debtError)
+      // Continue even if debt update fails
+    }
+
+    // Auto-create payment for purchase order
+    try {
+      const payment = new Payment({
+        paymentType: 'purchase',
+        relatedOrderId: savedPurchaseOrder._id,
+        relatedOrderNumber: savedPurchaseOrder.poNumber,
+        amount: savedPurchaseOrder.total,
+        paymentMethod: 'bank_transfer', // Default for purchase orders
+        paymentDate: new Date(),
+        status: 'pending', // Will be updated when payment is confirmed
+        notes: `Auto-created payment for purchase order ${savedPurchaseOrder.poNumber}. Supplier: ${supplierDoc.companyName}`,
+        receivedBy: request.user.id,
+        supplier: supplierDoc._id
+      })
+
+      await payment.save()
+    } catch (paymentError) {
+      // Log error but don't fail the purchase order creation
+      console.error('Error creating auto payment for purchase order:', paymentError)
+    }
+
     // Populate before sending response
     await savedPurchaseOrder.populate('supplier', 'supplierCode companyName')
     await savedPurchaseOrder.populate('items.product', 'name sku')
@@ -198,10 +228,10 @@ purchaseOrdersRouter.patch('/:id', userExtractor, async (request, response) => {
       return response.status(404).json({ error: 'Purchase order not found' })
     }
 
-    // Only draft and pending orders can be updated
-    if (!['draft', 'pending'].includes(purchaseOrder.status)) {
+    // Only pending orders can be updated
+    if (purchaseOrder.status !== 'pending') {
       return response.status(400).json({
-        error: 'Only draft or pending purchase orders can be updated'
+        error: 'Only pending purchase orders can be updated'
       })
     }
 
@@ -261,10 +291,10 @@ purchaseOrdersRouter.put('/:id', userExtractor, async (request, response) => {
       return response.status(404).json({ error: 'Purchase order not found' })
     }
 
-    // Only draft and pending orders can be updated
-    if (!['draft', 'pending'].includes(purchaseOrder.status)) {
+    // Only pending orders can be updated
+    if (purchaseOrder.status !== 'pending') {
       return response.status(400).json({
-        error: 'Only draft or pending purchase orders can be updated'
+        error: 'Only pending purchase orders can be updated'
       })
     }
 
@@ -320,7 +350,7 @@ purchaseOrdersRouter.patch('/:id/status', userExtractor, async (request, respons
   try {
     const { status, notes } = request.body
 
-    const validStatuses = ['draft', 'pending', 'approved', 'cancelled']
+    const validStatuses = ['pending', 'approved', 'received', 'cancelled']
 
     if (!status || !validStatuses.includes(status)) {
       return response.status(400).json({
@@ -336,9 +366,6 @@ purchaseOrdersRouter.patch('/:id/status', userExtractor, async (request, respons
 
     // Handle status transitions
     if (status === 'approved') {
-      if (purchaseOrder.status === 'draft') {
-        purchaseOrder.status = 'pending'
-      }
       await purchaseOrder.approve(request.user.id)
     } else if (status === 'cancelled') {
       await purchaseOrder.cancel()
@@ -371,12 +398,6 @@ purchaseOrdersRouter.put('/:id/approve', userExtractor, async (request, response
 
     if (!purchaseOrder) {
       return response.status(404).json({ error: 'Purchase order not found' })
-    }
-
-    // Change status to pending first if it's draft
-    if (purchaseOrder.status === 'draft') {
-      purchaseOrder.status = 'pending'
-      await purchaseOrder.save()
     }
 
     await purchaseOrder.approve(request.user.id)
@@ -450,9 +471,9 @@ purchaseOrdersRouter.post('/:id/receive', userExtractor, async (request, respons
       return response.status(404).json({ error: 'Purchase order not found' })
     }
 
-    if (purchaseOrder.status !== 'approved' && purchaseOrder.status !== 'partially_received') {
+    if (purchaseOrder.status !== 'approved') {
       return response.status(400).json({
-        error: 'Only approved or partially received purchase orders can receive items'
+        error: 'Only approved purchase orders can receive items'
       })
     }
 
@@ -545,10 +566,10 @@ purchaseOrdersRouter.delete('/:id', userExtractor, async (request, response) => 
       return response.status(404).json({ error: 'Purchase order not found' })
     }
 
-    // Only draft orders can be deleted
-    if (purchaseOrder.status !== 'draft') {
+    // Only paid orders can be deleted
+    if (purchaseOrder.paymentStatus !== 'paid') {
       return response.status(400).json({
-        error: 'Only draft purchase orders can be deleted. Use cancel for other statuses.'
+        error: 'Only paid purchase orders can be deleted.'
       })
     }
 

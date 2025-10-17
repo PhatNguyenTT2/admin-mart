@@ -87,8 +87,8 @@ const purchaseOrderSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ['draft', 'pending', 'approved', 'partially_received', 'received', 'cancelled'],
-    default: 'draft'
+    enum: ['pending', 'approved', 'received', 'cancelled'],
+    default: 'pending'
   },
 
   paymentStatus: {
@@ -233,17 +233,9 @@ purchaseOrderSchema.methods.receiveItems = async function (receivedItems, userId
     await inventory.save()
   }
 
-  // Check if all items are fully received
-  const allReceived = this.items.every(item => item.received === item.quantity)
-  const someReceived = this.items.some(item => item.received > 0)
-
-  if (allReceived) {
-    this.status = 'received'
-    this.actualDeliveryDate = new Date()
-  } else if (someReceived) {
-    this.status = 'partially_received'
-  }
-
+  // Mark as received
+  this.status = 'received'
+  this.actualDeliveryDate = new Date()
   this.receivedBy = userId
 
   return this.save()
@@ -251,7 +243,7 @@ purchaseOrderSchema.methods.receiveItems = async function (receivedItems, userId
 
 // Method to cancel purchase order
 purchaseOrderSchema.methods.cancel = function () {
-  if (this.status === 'received' || this.status === 'partially_received') {
+  if (this.status === 'received') {
     throw new Error('Cannot cancel a purchase order that has been received')
   }
 

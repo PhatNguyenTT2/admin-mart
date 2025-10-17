@@ -509,6 +509,50 @@ paymentsRouter.put('/:id/status', userExtractor, async (request, response) => {
       await order.save()
     }
 
+    // Handle purchase payments with supplier debt management
+    if (payment.paymentType === 'purchase') {
+      const purchaseOrder = await PurchaseOrder.findById(payment.relatedOrderId).populate('supplier')
+
+      if (!purchaseOrder) {
+        return response.status(404).json({ error: 'Related purchase order not found' })
+      }
+
+      if (status === 'completed') {
+        // Update purchase order payment tracking
+        purchaseOrder.paidAmount = (purchaseOrder.paidAmount || 0) + payment.amount
+
+        // Update payment status based on paid amount
+        if (purchaseOrder.paidAmount >= purchaseOrder.total) {
+          purchaseOrder.paymentStatus = 'paid'
+        } else if (purchaseOrder.paidAmount > 0) {
+          purchaseOrder.paymentStatus = 'partial'
+        }
+
+        await purchaseOrder.save()
+
+        // Update supplier debt and purchase stats
+        if (purchaseOrder.supplier) {
+          try {
+            const supplier = await Supplier.findById(purchaseOrder.supplier._id || purchaseOrder.supplier)
+            if (supplier) {
+              // Pay debt (reduce current debt)
+              await supplier.payDebt(payment.amount)
+
+              // Update total purchase amount (only amount, not count)
+              supplier.totalPurchaseAmount = (supplier.totalPurchaseAmount || 0) + payment.amount
+              await supplier.save()
+            }
+          } catch (supplierError) {
+            console.error('Error updating supplier stats:', supplierError)
+            // Don't fail the payment if supplier update fails
+          }
+        }
+      } else if (status === 'failed') {
+        purchaseOrder.paymentStatus = purchaseOrder.paidAmount > 0 ? 'partial' : 'unpaid'
+        await purchaseOrder.save()
+      }
+    }
+
     // Update payment status
     payment.status = status
     await payment.save()
