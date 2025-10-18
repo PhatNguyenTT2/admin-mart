@@ -366,6 +366,205 @@ ordersRouter.post('/', userExtractor, async (request, response) => {
   }
 })
 
+// PUT /api/orders/:id - Update order (Admin only)
+ordersRouter.put('/:id', userExtractor, isAdmin, async (request, response) => {
+  const {
+    customer,
+    deliveryType,
+    shippingAddress,
+    items,
+    paymentMethod,
+    customerNote
+  } = request.body
+
+  // Validation
+  if (!customer || !customer.name || !customer.email || !customer.phone) {
+    return response.status(400).json({
+      error: 'Customer information is required (name, email, phone)'
+    })
+  }
+
+  if (!items || items.length === 0) {
+    return response.status(400).json({
+      error: 'Order must contain at least one item'
+    })
+  }
+
+  try {
+    // Find existing order
+    const order = await Order.findById(request.params.id)
+
+    if (!order) {
+      return response.status(404).json({
+        error: 'Order not found'
+      })
+    }
+
+    // Only allow editing if order status is 'pending' or 'processing'
+    if (!['pending', 'processing'].includes(order.status)) {
+      return response.status(400).json({
+        error: 'Cannot edit order that has been shipped, delivered, or cancelled'
+      })
+    }
+
+    // Release old reserved stock
+    for (const oldItem of order.items) {
+      const inventory = await Inventory.findOne({ product: oldItem.product })
+      if (inventory && inventory.quantityReserved >= oldItem.quantity) {
+        inventory.quantityReserved -= oldItem.quantity
+        inventory.movements.push({
+          type: 'released',
+          quantity: oldItem.quantity,
+          reason: 'Order updated - old reservation released',
+          referenceType: 'order',
+          referenceId: order.orderNumber,
+          performedBy: request.user._id,
+          date: new Date()
+        })
+        await inventory.save()
+      }
+    }
+
+    // Verify products and calculate new totals
+    let subtotal = 0
+    const orderItems = []
+
+    for (const item of items) {
+      const product = await Product.findById(item.product)
+
+      if (!product) {
+        return response.status(400).json({
+          error: `Product not found: ${item.product}`
+        })
+      }
+
+      if (product.stock < item.quantity) {
+        return response.status(400).json({
+          error: `Insufficient stock for ${product.name}. Available: ${product.stock}`
+        })
+      }
+
+      const itemSubtotal = product.price * item.quantity
+
+      orderItems.push({
+        product: product._id,
+        productName: product.name,
+        productImage: product.image,
+        price: product.price,
+        quantity: item.quantity,
+        subtotal: itemSubtotal
+      })
+
+      subtotal += itemSubtotal
+    }
+
+    // Find customer to determine discount
+    let customerType = 'retail'
+    let discountPercentage = 0
+    let discount = 0
+    let isWalkIn = false
+
+    try {
+      const existingCustomer = await Customer.findOne({ email: customer.email })
+      if (existingCustomer) {
+        customerType = existingCustomer.customerType
+      } else {
+        isWalkIn = true
+      }
+    } catch (err) {
+      isWalkIn = true
+    }
+
+    // Calculate discount
+    if (customerType === 'wholesale') {
+      discountPercentage = 10
+      discount = subtotal * 0.10
+    } else if (customerType === 'vip') {
+      discountPercentage = 15
+      discount = subtotal * 0.15
+    }
+
+    // Calculate shipping fee
+    let shippingFee = 0
+    if (deliveryType === 'delivery' && isWalkIn) {
+      shippingFee = 10
+    }
+
+    const tax = subtotal * 0.1
+    const total = subtotal - discount + shippingFee + tax
+
+    // Update order
+    order.customer = customer
+    order.deliveryType = deliveryType || 'delivery'
+    order.shippingAddress = deliveryType === 'delivery' ? shippingAddress : undefined
+    order.items = orderItems
+    order.subtotal = subtotal
+    order.shippingFee = shippingFee
+    order.tax = tax
+    order.discount = discount
+    order.discountType = customerType
+    order.discountPercentage = discountPercentage
+    order.total = total
+    order.paymentMethod = paymentMethod || 'cash'
+    order.customerNote = customerNote
+
+    await order.save()
+
+    // Reserve new stock
+    for (const item of orderItems) {
+      let inventory = await Inventory.findOne({ product: item.product })
+
+      if (!inventory) {
+        inventory = new Inventory({
+          product: item.product,
+          quantityOnHand: 0,
+          reorderPoint: 10,
+          reorderQuantity: 50
+        })
+      }
+
+      if (inventory.quantityAvailable < item.quantity) {
+        throw new Error(`Insufficient available stock for ${item.productName}`)
+      }
+
+      inventory.quantityReserved += item.quantity
+      inventory.movements.push({
+        type: 'reserved',
+        quantity: item.quantity,
+        reason: 'Order updated - stock reserved',
+        referenceType: 'order',
+        referenceId: order.orderNumber,
+        performedBy: request.user._id,
+        date: new Date()
+      })
+
+      await inventory.save()
+    }
+
+    // Update payment record
+    const payment = await Payment.findOne({ relatedOrderId: order._id })
+    if (payment) {
+      payment.amount = total
+      payment.paymentMethod = paymentMethod || 'cash'
+      payment.notes = `Updated payment for order ${order.orderNumber}. Customer: ${customer.name}`
+      await payment.save()
+    }
+
+    await order.populate('items.product', 'name image sku')
+
+    response.status(200).json({
+      success: true,
+      message: 'Order updated successfully',
+      data: { order }
+    })
+  } catch (error) {
+    console.error('Error updating order:', error)
+    response.status(500).json({
+      error: error.message || 'Failed to update order'
+    })
+  }
+})
+
 // PATCH /api/orders/:id/status - Update order status (Admin only)
 ordersRouter.patch('/:id/status', userExtractor, isAdmin, async (request, response) => {
   const { status } = request.body

@@ -449,6 +449,9 @@ inventoryRouter.post('/:productId/adjust', userExtractor, async (request, respon
     const { productId } = request.params
     const { type, quantity, adjustmentType, referenceType, referenceId, notes } = request.body
 
+    console.log('[inventory/adjust] Request received for product:', productId)
+    console.log('[inventory/adjust] Body:', { type, quantity, adjustmentType, referenceType, referenceId, notes })
+
     if (!quantity || quantity <= 0) {
       return response.status(400).json({ error: 'Quantity must be positive' })
     }
@@ -485,8 +488,11 @@ inventoryRouter.post('/:productId/adjust', userExtractor, async (request, respon
         return response.status(400).json({ error: 'adjustmentType must be "increase" or "decrease"' })
       }
 
+      const oldQuantity = inventory.quantityOnHand
       const changeAmount = adjustmentType === 'increase' ? actualQuantity : -actualQuantity
       inventory.quantityOnHand = Math.max(0, inventory.quantityOnHand + changeAmount)
+
+      console.log(`[inventory/adjust] Adjustment: ${oldQuantity} ${adjustmentType === 'increase' ? '+' : '-'} ${actualQuantity} = ${inventory.quantityOnHand}`)
 
       movementReason = movementReason || `Stock ${adjustmentType} by ${actualQuantity}`
 
@@ -509,8 +515,10 @@ inventoryRouter.post('/:productId/adjust', userExtractor, async (request, respon
       // Update product stock
       const productDoc = await Product.findById(productId)
       if (productDoc) {
+        const oldProductStock = productDoc.stock
         productDoc.stock = inventory.quantityOnHand
         await productDoc.save()
+        console.log(`[inventory/adjust] Product stock updated: ${oldProductStock} → ${productDoc.stock}`)
       }
 
     } else if (type === 'reserved') {
