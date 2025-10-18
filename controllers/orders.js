@@ -293,17 +293,27 @@ ordersRouter.post('/', userExtractor, async (request, response) => {
 
     // Reserve stock for each item in the order
     try {
+      console.log('Starting stock reservation for order:', savedOrder.orderNumber)
+
       for (const item of orderItems) {
         let inventory = await Inventory.findOne({ product: item.product })
 
         if (!inventory) {
-          // Create inventory if doesn't exist
+          console.log('Creating new inventory for product:', item.product)
+          // Create inventory if doesn't exist - get stock from product
+          const product = await Product.findById(item.product)
+          if (!product) {
+            throw new Error(`Product not found: ${item.product}`)
+          }
+
           inventory = new Inventory({
             product: item.product,
-            quantityOnHand: 0,
+            quantityOnHand: product.stock || 0,
             reorderPoint: 10,
             reorderQuantity: 50
           })
+          await inventory.save()
+          console.log('New inventory created with stock:', product.stock)
         }
 
         // Check if enough available stock
@@ -324,6 +334,20 @@ ordersRouter.post('/', userExtractor, async (request, response) => {
         })
 
         await inventory.save()
+        console.log('Stock reserved for product:', item.productName, 'Quantity:', item.quantity)
+      }
+
+      console.log('Creating payment record for order:', savedOrder.orderNumber)
+
+      // Find customer if exists
+      let customerId = undefined
+      if (customer.email) {
+        try {
+          const existingCustomer = await Customer.findOne({ email: customer.email })
+          customerId = existingCustomer?._id
+        } catch (err) {
+          console.log('Customer lookup failed, proceeding without customer reference')
+        }
       }
 
       // Automatically create payment record for this order
@@ -336,12 +360,15 @@ ordersRouter.post('/', userExtractor, async (request, response) => {
         paymentDate: new Date(),
         status: 'pending', // Will be updated when payment is confirmed
         notes: `Auto-created payment for order ${savedOrder.orderNumber}. Customer: ${customer.name}`,
-        receivedBy: request.user._id
+        receivedBy: request.user._id,
+        customer: customerId
       })
 
       await payment.save()
+      console.log('Payment record created successfully:', payment._id)
 
     } catch (reserveError) {
+      console.error('Error during stock reservation or payment creation:', reserveError)
       // If reservation or payment creation fails, delete the order and return error
       await Order.findByIdAndDelete(savedOrder._id)
       return response.status(400).json({
@@ -355,13 +382,17 @@ ordersRouter.post('/', userExtractor, async (request, response) => {
       data: { order: savedOrder }
     })
   } catch (error) {
+    console.error('Error creating order:', error)
+    console.error('Error stack:', error.stack)
+
     if (error.name === 'ValidationError') {
       return response.status(400).json({
         error: error.message
       })
     }
     response.status(500).json({
-      error: 'Failed to create order'
+      error: 'Failed to create order',
+      details: error.message
     })
   }
 })

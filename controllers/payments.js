@@ -222,11 +222,26 @@ paymentsRouter.post('/', userExtractor, async (request, response) => {
 
       if (paidAmount >= order.total) {
         order.paymentStatus = 'paid'
+        order.paidAt = new Date()
       } else if (paidAmount > 0) {
         order.paymentStatus = 'partial'
       }
 
       await order.save()
+
+      // Update customer totalSpent if payment is completed and customer exists
+      if (savedPayment.status === 'completed' && order.customer && order.customer.email) {
+        try {
+          const customerDoc = await Customer.findOne({ email: order.customer.email })
+          if (customerDoc) {
+            await customerDoc.updatePurchaseStats(savedPayment.amount)
+            console.log(`Updated customer ${customerDoc.customerCode} totalSpent: +${savedPayment.amount}`)
+          }
+        } catch (customerError) {
+          console.error('Error updating customer stats:', customerError)
+          // Don't fail the payment if customer update fails
+        }
+      }
     } else if (paymentType === 'purchase') {
       await order.addPayment(amount)
     }
@@ -325,6 +340,22 @@ paymentsRouter.post('/:id/refund', userExtractor, async (request, response) => {
         }
 
         await order.save()
+
+        // Update customer totalSpent (decrease by refund amount)
+        if (order.customer && order.customer.email) {
+          try {
+            const customer = await Customer.findOne({ email: order.customer.email })
+            if (customer) {
+              // Decrease totalSpent by refund amount
+              customer.totalSpent = Math.max(0, customer.totalSpent - amount)
+              await customer.save()
+              console.log(`Updated customer ${customer.customerCode} totalSpent: -${amount} (refund)`)
+            }
+          } catch (customerError) {
+            console.error('Error updating customer stats after refund:', customerError)
+            // Don't fail the refund if customer update fails
+          }
+        }
       }
     }
 
@@ -488,15 +519,34 @@ paymentsRouter.put('/:id/status', userExtractor, async (request, response) => {
 
       // Update order payment status
       if (status === 'completed') {
-        order.paymentStatus = 'paid'
-        order.paidAt = new Date()
+        // Calculate total paid amount after this payment
+        const totalPaid = await Payment.aggregate([
+          {
+            $match: {
+              relatedOrderId: order._id,
+              status: 'completed'
+            }
+          },
+          { $group: { _id: null, total: { $sum: { $subtract: ['$amount', '$refundedAmount'] } } } }
+        ])
+
+        const paidAmount = totalPaid[0]?.total || 0
+
+        if (paidAmount >= order.total) {
+          order.paymentStatus = 'paid'
+          order.paidAt = new Date()
+        } else if (paidAmount > 0) {
+          order.paymentStatus = 'partial'
+        }
 
         // Update customer totalSpent if customer exists
         if (order.customer && order.customer.email) {
           try {
             const customer = await Customer.findOne({ email: order.customer.email })
             if (customer) {
-              await customer.updatePurchaseStats(order.total)
+              // Update with the payment amount, not the full order total
+              await customer.updatePurchaseStats(payment.amount)
+              console.log(`Updated customer ${customer.customerCode} totalSpent: +${payment.amount}`)
             }
           } catch (customerError) {
             console.error('Error updating customer stats:', customerError)
